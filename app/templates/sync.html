@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Sync Guild - WoW Guild Analytics{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h1 class="mb-4">Sync Guild from Battle.net</h1>
+        
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="realm_slug" class="form-label">Realm Slug</label>
+                        <input type="text" class="form-control" id="realm_slug" name="realm_slug" required
+                               placeholder="e.g., whitemane, grobbulus">
+                        <div class="form-text">Enter the realm name in lowercase with hyphens (e.g., "whitemane" or "old-blanchy")</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="guild_name_slug" class="form-label">Guild Name Slug</label>
+                        <input type="text" class="form-control" id="guild_name_slug" name="guild_name_slug" required
+                               placeholder="e.g., my-guild-name">
+                        <div class="form-text">Enter the guild name in lowercase with hyphens (e.g., "my-awesome-guild")</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Sync Guild</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <h5>How to find your realm and guild slug:</h5>
+            <ol>
+                <li>Your realm slug is usually the realm name in lowercase with spaces replaced by hyphens</li>
+                <li>Your guild name slug is the guild name in lowercase with spaces replaced by hyphens</li>
+                <li>Example: Guild "Knights of Azeroth" on "Old Blanchy" would be:
+                    <ul>
+                        <li>Realm slug: <code>old-blanchy</code></li>
+                        <li>Guild slug: <code>knights-of-azeroth</code></li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}

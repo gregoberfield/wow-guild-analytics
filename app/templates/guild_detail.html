@@ -1,0 +1,583 @@
+{% extends "base.html" %}
+
+{% block title %}{{ guild.name }} - WoW Guild Analytics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>{{ guild.name }} - {{ guild.realm }}</h1>
+            <div>
+                <small class="text-muted me-3">Last Updated: {{ guild.last_updated.strftime('%Y-%m-%d %H:%M') if guild.last_updated else 'Never' }}</small>
+                <form method="POST" action="{{ url_for('main.sync_character_details', guild_id=guild.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('This will fetch detailed character information for all {{ total_members }} members. This may take several minutes. Continue?');">
+                        <i class="bi bi-arrow-repeat"></i> Sync Character Details
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Members</h5>
+                        <p class="card-text display-4">{{ total_members }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Level 60s</h5>
+                        <p class="card-text display-4">{{ level_60_count }}</p>
+                        <small class="text-muted">{{ "%.1f"|format((level_60_count / total_members * 100) if total_members > 0 else 0) }}%</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Avg Item Level</h5>
+                        <p class="card-text display-4">{{ average_item_level }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">Faction</h5>
+                        <p class="card-text display-6">{{ guild.faction or 'Unknown' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if data_completeness < 100 %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="bi bi-info-circle"></i> <strong>Character Data Status:</strong> 
+            {{ chars_with_profiles }} of {{ total_members }} characters ({{ data_completeness }}%) have detailed profile information.
+            {% if data_completeness < 50 %}
+            Click "Sync Character Details" above to fetch missing data like item levels, gender, and specializations.
+            {% endif %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Level Distribution by Class (Levels 1-59)</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="levelClassChart" style="max-height: 500px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Level 60 Breakdown by Class</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="level60ClassChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Level 60 Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Class</th>
+                                    <th class="text-end">Count</th>
+                                    <th class="text-end">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for class_name in level_60_by_class.keys()|sort %}
+                                <tr>
+                                    <td>{{ class_name }}</td>
+                                    <td class="text-end">{{ level_60_by_class[class_name] }}</td>
+                                    <td class="text-end">{{ level_60_percentages[class_name] }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bold">
+                                    <td>Total</td>
+                                    <td class="text-end">{{ level_60_count }}</td>
+                                    <td class="text-end">100.0%</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Level 60 Specialization Breakdown by Class</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="classSpecChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Class Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="classChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Race Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="raceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Guild Roster ({{ total_members }} members)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='name', sort_order='asc' if sort_by == 'name' and sort_order == 'desc' else 'desc') }}" 
+                                               class="text-decoration-none text-dark">
+                                                Name
+                                                {% if sort_by == 'name' %}
+                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='level', sort_order='asc' if sort_by == 'level' and sort_order == 'desc' else 'desc') }}" 
+                                               class="text-decoration-none text-dark">
+                                                Level
+                                                {% if sort_by == 'level' %}
+                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='class', sort_order='asc' if sort_by == 'class' and sort_order == 'desc' else 'desc') }}" 
+                                               class="text-decoration-none text-dark">
+                                                Class
+                                                {% if sort_by == 'class' %}
+                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='race', sort_order='asc' if sort_by == 'race' and sort_order == 'desc' else 'desc') }}" 
+                                               class="text-decoration-none text-dark">
+                                                Race
+                                                {% if sort_by == 'race' %}
+                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='spec', sort_order='asc' if sort_by == 'spec' and sort_order == 'desc' else 'desc') }}" 
+                                               class="text-decoration-none text-dark">
+                                                Spec
+                                                {% if sort_by == 'spec' %}
+                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='ilvl', sort_order='asc' if sort_by == 'ilvl' and sort_order == 'desc' else 'desc') }}" 
+                                               class="text-decoration-none text-dark">
+                                                Item Level
+                                                {% if sort_by == 'ilvl' %}
+                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                        <th>
+                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='rank', sort_order='asc' if sort_by == 'rank' and sort_order == 'desc' else 'desc') }}" 
+                                               class="text-decoration-none text-dark">
+                                                Rank
+                                                {% if sort_by == 'rank' %}
+                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for char in characters %}
+                                    <tr>
+                                        <td>{{ char.name }}</td>
+                                        <td>{{ char.level or '-' }}</td>
+                                        <td>{{ char.character_class or '-' }}</td>
+                                        <td>{{ char.race or '-' }}</td>
+                                        <td>{{ char.spec_name or '-' }}</td>
+                                        <td>{{ char.average_item_level or '-' }}</td>
+                                        <td>{{ char.rank if char.rank is not none else '-' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript">
+    // Data from server
+    const classDistributionData = {{ class_distribution | tojson | safe }};
+    const raceDistributionData = {{ race_distribution | tojson | safe }};
+    const levelClassData = {{ level_class_distribution | tojson | safe }};
+    const allClasses = {{ all_classes | tojson | safe }};
+    const level60ByClass = {{ level_60_by_class | tojson | safe }};
+    const level60Percentages = {{ level_60_percentages | tojson | safe }};
+    const level60ClassSpec = {{ level_60_class_spec | tojson | safe }};
+    
+    // WoW Class colors
+    const classColors = {
+        'Warrior': '#C41F3B',
+        'Paladin': '#F58CBA',
+        'Hunter': '#ABD473',
+        'Rogue': '#FFF569',
+        'Priest': '#FFFFFF',
+        'Shaman': '#0070DE',
+        'Mage': '#69CCF0',
+        'Warlock': '#9482C9',
+        'Druid': '#FF7D0A',
+        'Death Knight': '#C41F3B',
+        'Monk': '#00FF96',
+        'Demon Hunter': '#A330C9',
+        'Unknown': '#808080'
+    };
+    
+    // Class Distribution Chart (Doughnut)
+    const classCtx = document.getElementById('classChart').getContext('2d');
+    const classLabels = Object.keys(classDistributionData);
+    const classValues = Object.values(classDistributionData);
+    const classChartColors = classLabels.map(cls => classColors[cls] || '#808080');
+    
+    new Chart(classCtx, {
+        type: 'doughnut',
+        data: {
+            labels: classLabels,
+            datasets: [{
+                data: classValues,
+                backgroundColor: classChartColors
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Race Distribution Chart (Bar)
+    const raceCtx = document.getElementById('raceChart').getContext('2d');
+    const raceLabels = Object.keys(raceDistributionData);
+    const raceValues = Object.values(raceDistributionData);
+    
+    new Chart(raceCtx, {
+        type: 'bar',
+        data: {
+            labels: raceLabels,
+            datasets: [{
+                label: 'Number of Characters',
+                data: raceValues,
+                backgroundColor: '#0070DE'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+    
+    // Level Distribution by Class (Stacked Bar)
+    const levelClassCtx = document.getElementById('levelClassChart').getContext('2d');
+    
+    // Get all unique levels and sort them
+    const levels = Object.keys(levelClassData).map(Number).sort((a, b) => a - b);
+    
+    // Create datasets for each class
+    const levelClassDatasets = allClasses.map(className => {
+        return {
+            label: className,
+            data: levels.map(level => {
+                return levelClassData[level] ? (levelClassData[level][className] || 0) : 0;
+            }),
+            backgroundColor: classColors[className] || '#808080'
+        };
+    });
+    
+    new Chart(levelClassCtx, {
+        type: 'bar',
+        data: {
+            labels: levels,
+            datasets: levelClassDatasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: false
+                },
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    title: {
+                        display: true,
+                        text: 'Character Level'
+                    }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Characters'
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+    
+    // Level 60 Breakdown by Class (Horizontal Bar with percentages)
+    const level60ClassCtx = document.getElementById('level60ClassChart').getContext('2d');
+    const level60Classes = Object.keys(level60ByClass).sort((a, b) => level60ByClass[b] - level60ByClass[a]);
+    const level60Values = level60Classes.map(cls => level60ByClass[cls]);
+    const level60Colors = level60Classes.map(cls => classColors[cls] || '#808080');
+    
+    new Chart(level60ClassCtx, {
+        type: 'bar',
+        data: {
+            labels: level60Classes,
+            datasets: [{
+                label: 'Level 60 Characters',
+                data: level60Values,
+                backgroundColor: level60Colors
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.x || 0;
+                            const className = context.label || '';
+                            const percentage = level60Percentages[className] || 0;
+                            return `${value} characters (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Characters'
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+    
+    // Level 60 Class-Spec Breakdown Chart (Grouped Bar)
+    const classSpecCtx = document.getElementById('classSpecChart').getContext('2d');
+    
+    // Get all classes that have level 60 characters
+    const classesWithLevel60 = Object.keys(level60ClassSpec).sort();
+    
+    // Get all unique specs across all classes
+    const allSpecs = new Set();
+    classesWithLevel60.forEach(className => {
+        Object.keys(level60ClassSpec[className]).forEach(spec => allSpecs.add(spec));
+    });
+    const specList = Array.from(allSpecs).sort();
+    
+    // Color palette for specs (different shades)
+    const specColors = {
+        // Use lighter/darker shades for variation
+        'Affliction': '#9482C9',
+        'Demonology': '#7A5FA6',
+        'Destruction': '#5D4580',
+        'Arms': '#C41F3B',
+        'Fury': '#A01830',
+        'Protection': '#7D1225',
+        'Holy': '#F58CBA',
+        'Retribution': '#D46B93',
+        'Discipline': '#FFFFFF',
+        'Shadow': '#D1D1D1',
+        'Beast Mastery': '#ABD473',
+        'Marksmanship': '#8FB25C',
+        'Survival': '#739046',
+        'Assassination': '#FFF569',
+        'Combat': '#D4CC55',
+        'Subtlety': '#B0A646',
+        'Elemental': '#0070DE',
+        'Enhancement': '#0058B2',
+        'Restoration': '#004085',
+        'Arcane': '#69CCF0',
+        'Fire': '#56A9C7',
+        'Frost': '#43869E',
+        'Balance': '#FF7D0A',
+        'Feral': '#D26708',
+        'Guardian': '#A55206',
+        'Unknown': '#808080'
+    };
+    
+    // Create datasets for each spec
+    const classSpecDatasets = specList.map(spec => {
+        return {
+            label: spec,
+            data: classesWithLevel60.map(className => {
+                return level60ClassSpec[className][spec] || 0;
+            }),
+            backgroundColor: specColors[spec] || '#808080'
+        };
+    });
+    
+    new Chart(classSpecCtx, {
+        type: 'bar',
+        data: {
+            labels: classesWithLevel60,
+            datasets: classSpecDatasets
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: false
+                },
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        footer: function(tooltipItems) {
+                            let sum = 0;
+                            tooltipItems.forEach(function(tooltipItem) {
+                                sum += tooltipItem.parsed.y;
+                            });
+                            return 'Total: ' + sum;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Class'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Characters'
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

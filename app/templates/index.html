@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Home - WoW Guild Analytics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Tracked Guilds</h1>
+        
+        {% if guilds %}
+            <div class="row">
+                {% for guild in guilds %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ guild.name }}</h5>
+                            <p class="card-text">
+                                <strong>Realm:</strong> {{ guild.realm }}<br>
+                                <strong>Faction:</strong> {{ guild.faction or 'Unknown' }}<br>
+                                <strong>Members:</strong> {{ guild.member_count or 0 }}<br>
+                                <strong>Last Updated:</strong> {{ guild.last_updated.strftime('%Y-%m-%d %H:%M') if guild.last_updated else 'Never' }}
+                            </p>
+                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id) }}" class="btn btn-primary">View Analytics</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <h4 class="alert-heading">No guilds tracked yet!</h4>
+                <p>Start by <a href="{{ url_for('main.sync_guild') }}" class="alert-link">syncing a guild</a> from the Battle.net API.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

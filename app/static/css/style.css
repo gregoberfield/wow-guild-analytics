@@ -1,0 +1,52 @@
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    flex: 1;
+}
+
+footer {
+    margin-top: auto;
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.table th {
+    background-color: #f8f9fa;
+}
+
+/* Sortable table headers */
+.table thead th a {
+    display: block;
+    width: 100%;
+    cursor: pointer;
+    user-select: none;
+}
+
+.table thead th a:hover {
+    color: #0d6efd !important;
+}
+
+.table thead th i {
+    font-size: 0.8em;
+    margin-left: 0.25rem;
+}
+
+canvas {
+    max-height: 400px;
+}
