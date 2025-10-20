@@ -9,11 +9,13 @@
             <h1>{{ guild.name }} - {{ guild.realm }}</h1>
             <div>
                 <small class="text-muted me-3">Last Updated: {{ guild.last_updated.strftime('%Y-%m-%d %H:%M') if guild.last_updated else 'Never' }}</small>
+                {% if current_user.is_authenticated %}
                 <form method="POST" action="{{ url_for('main.sync_character_details', guild_id=guild.id) }}" style="display: inline;">
                     <button type="submit" class="btn btn-primary" onclick="return confirm('This will fetch detailed character information for all {{ total_members }} members. This may take several minutes. Continue?');">
                         <i class="bi bi-arrow-repeat"></i> Sync Character Details
                     </button>
                 </form>
+                {% endif %}
             </div>
         </div>
         

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User - WoW Guild Analytics{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="d-flex align-items-center mb-4">
+            <a href="{{ url_for('admin.index') }}" class="btn btn-outline-secondary me-3">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h1><i class="bi bi-pencil me-2"></i>Edit User: {{ user.username }}</h1>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required autofocus>
+                            <div class="form-text">Unique username for login</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                            <div class="form-text">User's email address</div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Leave password fields blank to keep the current password
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="password" name="password" minlength="6">
+                            <div class="form-text">Minimum 6 characters (optional)</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="confirm_password" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" minlength="6">
+                            <div class="form-text">Re-enter new password</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_admin" name="is_admin" 
+                                   {{ 'checked' if user.is_admin else '' }}
+                                   {{ 'disabled' if user.id == current_user.id else '' }}>
+                            <label class="form-check-label" for="is_admin">
+                                <i class="bi bi-shield-fill-check me-1"></i>Administrator
+                            </label>
+                            {% if user.id == current_user.id %}
+                            <div class="form-text text-warning">You cannot remove your own admin privileges</div>
+                            {% else %}
+                            <div class="form-text">Admins can manage users and perform all actions</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                   {{ 'checked' if user.is_active else '' }}
+                                   {{ 'disabled' if user.id == current_user.id else '' }}>
+                            <label class="form-check-label" for="is_active">
+                                <i class="bi bi-check-circle me-1"></i>Active
+                            </label>
+                            {% if user.id == current_user.id %}
+                            <div class="form-text text-warning">You cannot deactivate your own account</div>
+                            {% else %}
+                            <div class="form-text">Inactive users cannot log in</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

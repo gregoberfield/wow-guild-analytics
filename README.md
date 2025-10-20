@@ -4,7 +4,9 @@ A Flask application that leverages the World of Warcraft Classic API to collect 
 
 ## Features
 
-- **Guild Roster Sync**: Fetch and store guild member data from Battle.net API
+- **User Authentication**: Secure login system with password hashing
+- **Admin Panel**: User management for administrators
+- **Guild Roster Sync**: Fetch and store guild member data from Battle.net API (requires login)
 - **Auto-cleanup**: Re-syncing automatically removes members who left the guild
 - **Track Multiple Guilds**: Monitor rosters for multiple guilds
 - **Analytics Dashboards**: Interactive charts and visualizations
@@ -12,6 +14,7 @@ A Flask application that leverages the World of Warcraft Classic API to collect 
 - **Race Distribution**: Visualize faction and race composition
 - **Character Details**: Level, spec, item level, achievements
 - **Sortable Tables**: Click any column to sort the roster
+- **Dark Theme**: Modern black background with blue accents
 - **RESTful API**: Programmatic access to all data
 - **Comprehensive Logging**: Track sync operations and changes
 
@@ -46,7 +49,21 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Run the Application
+### 4. Initialize Database with Authentication
+
+Run the migration script to create the User table and default admin account:
+
+```bash
+python migrate_add_users.py
+```
+
+This creates a default admin user:
+- **Username**: `admin`
+- **Password**: `admin123`
+
+⚠️ **IMPORTANT**: Change this password immediately after first login!
+
+### 5. Run the Application
 
 ```bash
 python run.py
@@ -54,9 +71,19 @@ python run.py
 
 The application will be available at http://localhost:5000
 
-### 5. Sync Your Guild
+### 6. First Login
 
-1. Navigate to the "Sync Guild" page
+1. Navigate to http://localhost:5000
+2. Click "Login" in the navigation bar
+3. Enter:
+   - Username: `admin`
+   - Password: `admin123`
+4. Go to Admin → Edit User to change your password
+
+### 7. Sync Your Guild
+
+1. Log in to your account (syncing requires authentication)
+2. Navigate to the "Sync Guild" page
 2. Enter your realm slug (e.g., "whitemane", "dreamscythe")
 3. Enter your guild name slug (e.g., "my-guild-name")
 4. Click "Sync Guild"

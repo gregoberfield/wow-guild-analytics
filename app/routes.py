@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask_login import login_required, current_user
 from app.services import GuildService
 from app.models import Guild, Character
 from app import db
@@ -61,6 +62,7 @@ def guild_detail(guild_id):
     return render_template('guild_detail.html', **analytics)
 
 @main_bp.route('/sync', methods=['GET', 'POST'])
+@login_required
 def sync_guild():
     """Sync guild roster from Battle.net"""
     if request.method == 'POST':
@@ -89,6 +91,7 @@ def sync_guild():
     return render_template('sync.html')
 
 @main_bp.route('/guild/<int:guild_id>/sync-characters', methods=['POST'])
+@login_required
 def sync_character_details(guild_id):
     """Sync detailed character information for a guild"""
     try:
