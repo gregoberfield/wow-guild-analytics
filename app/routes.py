@@ -73,8 +73,14 @@ def sync_guild():
         
         try:
             service = GuildService()
-            guild, member_count = service.sync_guild_roster(realm_slug, guild_name_slug)
-            flash(f'Successfully synced {member_count} members from {guild.name}', 'success')
+            guild, member_count, removed_count = service.sync_guild_roster(realm_slug, guild_name_slug)
+            
+            # Build success message
+            success_msg = f'Successfully synced {member_count} members from {guild.name}'
+            if removed_count > 0:
+                success_msg += f' ({removed_count} member{"s" if removed_count != 1 else ""} removed)'
+            
+            flash(success_msg, 'success')
             return redirect(url_for('main.guild_detail', guild_id=guild.id))
         except Exception as e:
             flash(f'Error syncing guild: {str(e)}', 'error')

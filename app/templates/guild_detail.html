@@ -530,6 +530,46 @@
         };
     });
     
+    // Plugin to draw spec labels below class names
+    const specLabelPlugin = {
+        id: 'specLabels',
+        afterDraw: (chart) => {
+            const ctx = chart.ctx;
+            const xAxis = chart.scales.x;
+            const yAxis = chart.scales.y;
+            
+            ctx.save();
+            ctx.font = '11px sans-serif';
+            
+            classesWithLevel60.forEach((className, index) => {
+                const specs = level60ClassSpec[className];
+                const specEntries = Object.entries(specs).filter(([_, count]) => count > 0);
+                
+                if (specEntries.length === 0) return;
+                
+                // Get the x position for this class
+                const x = xAxis.getPixelForValue(index);
+                const startY = yAxis.bottom + 35; // Position below class name
+                
+                specEntries.forEach(([specName, count], specIndex) => {
+                    const color = specColors[specName] || '#808080';
+                    const y = startY + (specIndex * 15);
+                    
+                    // Draw colored square
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x - 40, y - 8, 10, 10);
+                    
+                    // Draw spec name
+                    ctx.fillStyle = '#333';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`${specName} (${count})`, x - 27, y);
+                });
+            });
+            
+            ctx.restore();
+        }
+    };
+    
     new Chart(classSpecCtx, {
         type: 'bar',
         data: {
@@ -538,6 +578,11 @@
         },
         options: {
             responsive: true,
+            layout: {
+                padding: {
+                    bottom: 100  // Add space for spec labels
+                }
+            },
             plugins: {
                 title: {
                     display: false
@@ -561,12 +606,14 @@
             },
             scales: {
                 x: {
+                    stacked: true,
                     title: {
                         display: true,
                         text: 'Class'
                     }
                 },
                 y: {
+                    stacked: true,
                     beginAtZero: true,
                     title: {
                         display: true,
@@ -577,7 +624,8 @@
                     }
                 }
             }
-        }
+        },
+        plugins: [specLabelPlugin]
     });
 </script>
 {% endblock %}

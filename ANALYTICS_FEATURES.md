@@ -16,22 +16,23 @@ A comprehensive stacked column chart showing:
 - Legend to identify each class
 
 ### 2. **Level 60 Specialization Breakdown by Class**
-A grouped bar chart showing spec distribution within each class:
+A stacked column chart showing spec distribution within each class:
 - **X-axis**: Character classes (Druid, Hunter, Mage, etc.)
 - **Y-axis**: Number of characters
-- **Grouped Bars**: Each spec shown as a different colored bar
+- **Stacked Columns**: Each spec shown as a different colored segment stacked vertically
 - **Purpose**: Visualize how level 60s are distributed across specializations within each class
 
 **Features:**
 - Color-coded by specialization (30+ unique spec colors)
 - Interactive tooltips showing counts per spec and class totals
-- Grouped view to compare spec popularity within classes
+- Stacked view to see total level 60s per class at a glance
 - Legend to identify each specialization
 - **Only includes level 60 characters**
 
 **Example:**
-- Warlock: 15 Demonology (purple), 10 Destruction (red), 5 Affliction (green)
-- Priest: 20 Holy (yellow), 8 Shadow (dark purple), 3 Discipline (white)
+- Warlock column shows: Demonology (bottom, purple) + Destruction (middle, red) + Affliction (top, green)
+- Priest column shows: Holy (bottom, yellow) + Shadow (middle, dark purple) + Discipline (top, white)
+- Height of each column = total level 60s for that class
 
 ### 3. **Level 60 Breakdown by Class**
 Two complementary visualizations for max-level characters:
@@ -121,7 +122,7 @@ The guild detail page now has this structure:
 
 ┌─────────────────────────────────────────────────────┐
 │  Level 60 Specialization Breakdown by Class         │
-│  (Full-width grouped bar chart, level 60s only)     │
+│  (Full-width stacked column chart, level 60s only)  │
 └─────────────────────────────────────────────────────┘
 
 ┌──────────────────────────┬──────────────────────────┐

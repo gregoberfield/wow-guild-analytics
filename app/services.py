@@ -48,6 +48,10 @@ class GuildService:
             successful_profiles = 0
             failed_profiles = 0
             
+            # Track current member IDs to identify members who left
+            current_member_bnet_ids = set()
+            current_member_names = set()
+            
             # Process each member
             current_app.logger.info(f"Processing {len(members)} members...")
             for idx, member in enumerate(members, 1):
@@ -55,6 +59,11 @@ class GuildService:
                 char_name = character_data.get('name')
                 char_bnet_id = character_data.get('id')  # Battle.net character ID
                 char_realm = character_data.get('realm', {}).get('slug', realm_slug)
+                
+                # Track this member as current
+                if char_bnet_id:
+                    current_member_bnet_ids.add(char_bnet_id)
+                current_member_names.add((char_name, character_data.get('realm', {}).get('name', '')))
                 
                 if idx % 50 == 0:
                     current_app.logger.info(f"Progress: {idx}/{len(members)} members processed...")
@@ -118,14 +127,37 @@ class GuildService:
                 
                 db.session.add(character)
             
+            # Remove characters that are no longer in the guild
+            current_app.logger.info("Checking for members who left the guild...")
+            existing_characters = Character.query.filter_by(guild_id=guild.id).all()
+            removed_count = 0
+            
+            for character in existing_characters:
+                # Check if this character is still in the current roster
+                is_still_member = False
+                
+                # Check by bnet_id first (most reliable)
+                if character.bnet_id and character.bnet_id in current_member_bnet_ids:
+                    is_still_member = True
+                # Fall back to name + realm check
+                elif (character.name, character.realm) in current_member_names:
+                    is_still_member = True
+                
+                # Remove character if they're no longer in the guild
+                if not is_still_member:
+                    current_app.logger.info(f"Removing '{character.name}' (no longer in guild)")
+                    db.session.delete(character)
+                    removed_count += 1
+            
             db.session.commit()
             
             current_app.logger.info(f"✅ Guild sync completed successfully!")
             current_app.logger.info(f"   - Total members: {len(members)}")
             current_app.logger.info(f"   - Profiles retrieved: {successful_profiles}")
             current_app.logger.info(f"   - Profiles unavailable: {failed_profiles}")
+            current_app.logger.info(f"   - Members removed: {removed_count}")
             
-            return guild, len(members)
+            return guild, len(members), removed_count
             
         except Exception as e:
             current_app.logger.error(f"❌ Guild sync failed: {str(e)}")

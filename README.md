@@ -4,12 +4,16 @@ A Flask application that leverages the World of Warcraft Classic API to collect 
 
 ## Features
 
-- Sync guild rosters from Battle.net API
-- Track multiple guilds
-- Analytics dashboards with charts
-- Class and race distribution visualizations
-- Character details including level, spec, and item level
-- RESTful API endpoints for programmatic access
+- **Guild Roster Sync**: Fetch and store guild member data from Battle.net API
+- **Auto-cleanup**: Re-syncing automatically removes members who left the guild
+- **Track Multiple Guilds**: Monitor rosters for multiple guilds
+- **Analytics Dashboards**: Interactive charts and visualizations
+- **Class & Spec Breakdown**: See class distribution and spec choices (level 60s)
+- **Race Distribution**: Visualize faction and race composition
+- **Character Details**: Level, spec, item level, achievements
+- **Sortable Tables**: Click any column to sort the roster
+- **RESTful API**: Programmatic access to all data
+- **Comprehensive Logging**: Track sync operations and changes
 
 ## Setup Instructions
 
@@ -53,9 +57,16 @@ The application will be available at http://localhost:5000
 ### 5. Sync Your Guild
 
 1. Navigate to the "Sync Guild" page
-2. Enter your realm slug (e.g., "whitemane", "grobbulus")
+2. Enter your realm slug (e.g., "whitemane", "dreamscythe")
 3. Enter your guild name slug (e.g., "my-guild-name")
 4. Click "Sync Guild"
+
+**Re-syncing:** You can re-sync a guild anytime to update the roster. The application will:
+- Add new members who joined
+- Update existing member information
+- **Automatically remove members who left the guild**
+
+See [RESYNC_FEATURE.md](RESYNC_FEATURE.md) for detailed information about the re-sync functionality.
 
 ## API Endpoints
 
