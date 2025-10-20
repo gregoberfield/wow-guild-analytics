@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
 from app.services import GuildService
-from app.models import Guild, Character
+from app.models import Guild, Character, GuildMemberHistory, CharacterProgressionHistory
 from app import db
 
 main_bp = Blueprint('main', __name__)
@@ -102,6 +102,92 @@ def sync_character_details(guild_id):
         flash(f'Error syncing character details: {str(e)}', 'error')
     
     return redirect(url_for('main.guild_detail', guild_id=guild_id))
+
+@main_bp.route('/guild/<int:guild_id>/history')
+def guild_history(guild_id):
+    """View guild member history log"""
+    guild = Guild.query.get_or_404(guild_id)
+    
+    # Get pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    action_filter = request.args.get('action', None)  # 'added', 'removed', or None for all
+    
+    # Build query
+    query = GuildMemberHistory.query.filter_by(guild_id=guild_id)
+    
+    # Apply filter if specified
+    if action_filter in ['added', 'removed']:
+        query = query.filter_by(action=action_filter)
+    
+    # Order by most recent first
+    query = query.order_by(GuildMemberHistory.timestamp.desc())
+    
+    # Paginate results
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    history_entries = pagination.items
+    
+    # Get summary statistics
+    total_added = GuildMemberHistory.query.filter_by(guild_id=guild_id, action='added').count()
+    total_removed = GuildMemberHistory.query.filter_by(guild_id=guild_id, action='removed').count()
+    
+    return render_template('guild_history.html',
+                         guild=guild,
+                         history_entries=history_entries,
+                         pagination=pagination,
+                         action_filter=action_filter,
+                         total_added=total_added,
+                         total_removed=total_removed)
+
+@main_bp.route('/character/<int:character_id>/progression')
+def character_progression(character_id):
+    """View character progression history"""
+    character = Character.query.get_or_404(character_id)
+    
+    # Get pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
+    
+    # Query progression history for this character
+    progression_query = CharacterProgressionHistory.query.filter_by(
+        character_id=character_id
+    ).order_by(CharacterProgressionHistory.timestamp.desc())
+    
+    pagination = progression_query.paginate(
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )
+    
+    progression_entries = pagination.items
+    
+    # Get statistics
+    first_entry = CharacterProgressionHistory.query.filter_by(
+        character_id=character_id
+    ).order_by(CharacterProgressionHistory.timestamp.asc()).first()
+    
+    latest_entry = CharacterProgressionHistory.query.filter_by(
+        character_id=character_id
+    ).order_by(CharacterProgressionHistory.timestamp.desc()).first()
+    
+    # Calculate gains
+    level_gain = 0
+    ilvl_gain = 0
+    
+    if first_entry and latest_entry:
+        if first_entry.character_level and latest_entry.character_level:
+            level_gain = latest_entry.character_level - first_entry.character_level
+        if first_entry.average_item_level and latest_entry.average_item_level:
+            ilvl_gain = latest_entry.average_item_level - first_entry.average_item_level
+    
+    return render_template('character_progression.html',
+                         character=character,
+                         progression_entries=progression_entries,
+                         pagination=pagination,
+                         first_entry=first_entry,
+                         latest_entry=latest_entry,
+                         level_gain=level_gain,
+                         ilvl_gain=ilvl_gain)
 
 @main_bp.route('/api/guild/<int:guild_id>/analytics')
 def api_guild_analytics(guild_id):

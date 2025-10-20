@@ -1,4 +1,4 @@
-from app.models import Guild, Character
+from app.models import Guild, Character, GuildMemberHistory, CharacterProgressionHistory
 from app.bnet_api import BattleNetAPI
 from app import db
 from datetime import datetime
@@ -47,10 +47,20 @@ class GuildService:
             # Track statistics
             successful_profiles = 0
             failed_profiles = 0
+            added_count = 0
             
             # Track current member IDs to identify members who left
             current_member_bnet_ids = set()
             current_member_names = set()
+            
+            # Get existing characters to track new additions
+            existing_character_ids = set()
+            existing_characters_map = {}
+            if guild.id:
+                for char in Character.query.filter_by(guild_id=guild.id).all():
+                    if char.bnet_id:
+                        existing_character_ids.add(char.bnet_id)
+                    existing_characters_map[(char.name, char.realm)] = char
             
             # Process each member
             current_app.logger.info(f"Processing {len(members)} members...")
@@ -70,17 +80,24 @@ class GuildService:
                 
                 # Get or create character (try by bnet_id first, then by name)
                 character = None
+                is_new_character = False
+                
                 if char_bnet_id:
                     character = Character.query.filter_by(bnet_id=char_bnet_id).first()
+                    if not character and char_bnet_id not in existing_character_ids:
+                        is_new_character = True
                 
                 if not character:
                     character = Character.query.filter_by(
                         name=char_name,
                         realm=character_data.get('realm', {}).get('name', '')
                     ).first()
+                    if not character:
+                        is_new_character = True
                 
                 if not character:
                     character = Character(name=char_name)
+                    is_new_character = True
                 
                 # Update character data from roster
                 character.bnet_id = char_bnet_id
@@ -126,6 +143,63 @@ class GuildService:
                         current_app.logger.warning(f"Could not fetch details for '{char_name}': {error_msg}")
                 
                 db.session.add(character)
+                
+                # Flush to ensure character.id is available for queries
+                db.session.flush()
+                
+                # Track character progression (level and item level changes)
+                # Only track if character has meaningful data and isn't brand new
+                if not is_new_character and character.id and guild.id:
+                    should_track = False
+                    
+                    # Get the most recent progression entry for this character
+                    last_progression = CharacterProgressionHistory.query.filter_by(
+                        character_id=character.id,
+                        guild_id=guild.id
+                    ).order_by(CharacterProgressionHistory.timestamp.desc()).first()
+                    
+                    # Track only if this is the first entry OR if there's been a change
+                    if not last_progression:
+                        # First progression entry for this character
+                        should_track = True
+                    else:
+                        # Check if any stat has changed from the last recorded value
+                        level_changed = last_progression.character_level != character.level
+                        avg_ilvl_changed = last_progression.average_item_level != character.average_item_level
+                        equipped_ilvl_changed = last_progression.equipped_item_level != character.equipped_item_level
+                        
+                        if level_changed or avg_ilvl_changed or equipped_ilvl_changed:
+                            should_track = True
+                            current_app.logger.debug(
+                                f"Progression change detected for {character.name}: "
+                                f"Level {last_progression.character_level or 'None'}->{character.level or 'None'}, "
+                                f"Avg iLvl {last_progression.average_item_level or 'None'}->{character.average_item_level or 'None'}, "
+                                f"Equipped iLvl {last_progression.equipped_item_level or 'None'}->{character.equipped_item_level or 'None'}"
+                            )
+                    
+                    # Only create entry if there's meaningful data and a change was detected
+                    if should_track and (character.level or character.average_item_level):
+                        progression_entry = CharacterProgressionHistory(
+                            character_id=character.id,
+                            guild_id=guild.id,
+                            character_level=character.level,
+                            average_item_level=character.average_item_level,
+                            equipped_item_level=character.equipped_item_level
+                        )
+                        db.session.add(progression_entry)
+                        current_app.logger.info(f"✓ Progression tracked for {character.name}")
+                
+                # Log new member addition if this is their first time in the guild
+                if is_new_character and guild.id:
+                    history_entry = GuildMemberHistory(
+                        guild_id=guild.id,
+                        character_name=char_name,
+                        character_level=character.level,
+                        character_class=character.character_class or 'Unknown',
+                        action='added'
+                    )
+                    db.session.add(history_entry)
+                    added_count += 1
             
             # Remove characters that are no longer in the guild
             current_app.logger.info("Checking for members who left the guild...")
@@ -146,6 +220,23 @@ class GuildService:
                 # Remove character if they're no longer in the guild
                 if not is_still_member:
                     current_app.logger.info(f"Removing '{character.name}' (no longer in guild)")
+                    
+                    # Log member removal
+                    history_entry = GuildMemberHistory(
+                        guild_id=guild.id,
+                        character_name=character.name,
+                        character_level=character.level,
+                        character_class=character.character_class or 'Unknown',
+                        action='removed'
+                    )
+                    db.session.add(history_entry)
+                    
+                    # Delete progression history for this character in this guild
+                    CharacterProgressionHistory.query.filter_by(
+                        character_id=character.id,
+                        guild_id=guild.id
+                    ).delete()
+                    
                     db.session.delete(character)
                     removed_count += 1
             
@@ -155,6 +246,7 @@ class GuildService:
             current_app.logger.info(f"   - Total members: {len(members)}")
             current_app.logger.info(f"   - Profiles retrieved: {successful_profiles}")
             current_app.logger.info(f"   - Profiles unavailable: {failed_profiles}")
+            current_app.logger.info(f"   - Members added: {added_count}")
             current_app.logger.info(f"   - Members removed: {removed_count}")
             
             return guild, len(members), removed_count

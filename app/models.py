@@ -32,6 +32,34 @@ class Guild(db.Model):
     member_count = db.Column(db.Integer)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
     members = db.relationship('Character', backref='guild', lazy=True)
+    history_logs = db.relationship('GuildMemberHistory', backref='guild', lazy=True, order_by='GuildMemberHistory.timestamp.desc()')
+    progression_logs = db.relationship('CharacterProgressionHistory', backref='guild', lazy=True, order_by='CharacterProgressionHistory.timestamp.desc()')
+
+class GuildMemberHistory(db.Model):
+    """Track member additions and removals from guilds"""
+    id = db.Column(db.Integer, primary_key=True)
+    guild_id = db.Column(db.Integer, db.ForeignKey('guild.id'), nullable=False)
+    character_name = db.Column(db.String(100), nullable=False)
+    character_level = db.Column(db.Integer)
+    character_class = db.Column(db.String(50))
+    action = db.Column(db.String(20), nullable=False)  # 'added' or 'removed'
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    
+    def __repr__(self):
+        return f'<GuildMemberHistory {self.character_name} {self.action} at {self.timestamp}>'
+
+class CharacterProgressionHistory(db.Model):
+    """Track character level and item level progression over time"""
+    id = db.Column(db.Integer, primary_key=True)
+    character_id = db.Column(db.Integer, db.ForeignKey('character.id'), nullable=False)
+    guild_id = db.Column(db.Integer, db.ForeignKey('guild.id'), nullable=False)
+    character_level = db.Column(db.Integer)
+    average_item_level = db.Column(db.Integer)
+    equipped_item_level = db.Column(db.Integer)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    
+    def __repr__(self):
+        return f'<CharacterProgressionHistory char_id={self.character_id} level={self.character_level} ilvl={self.average_item_level} at {self.timestamp}>'
 
 class Character(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -50,6 +78,7 @@ class Character(db.Model):
     rank = db.Column(db.Integer)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
     guild_id = db.Column(db.Integer, db.ForeignKey('guild.id'), nullable=True)
+    progression_history = db.relationship('CharacterProgressionHistory', backref='character', lazy=True, order_by='CharacterProgressionHistory.timestamp.desc()', cascade='all, delete-orphan')
     
     def to_dict(self):
         return {

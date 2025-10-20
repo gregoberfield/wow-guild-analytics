@@ -9,6 +9,9 @@
             <h1>{{ guild.name }} - {{ guild.realm }}</h1>
             <div>
                 <small class="text-muted me-3">Last Updated: {{ guild.last_updated.strftime('%Y-%m-%d %H:%M') if guild.last_updated else 'Never' }}</small>
+                <a href="{{ url_for('main.guild_history', guild_id=guild.id) }}" class="btn btn-outline-info me-2">
+                    <i class="bi bi-clock-history"></i> View History
+                </a>
                 {% if current_user.is_authenticated %}
                 <form method="POST" action="{{ url_for('main.sync_character_details', guild_id=guild.id) }}" style="display: inline;">
                     <button type="submit" class="btn btn-primary" onclick="return confirm('This will fetch detailed character information for all {{ total_members }} members. This may take several minutes. Continue?');">
@@ -255,7 +258,14 @@
                                 <tbody>
                                     {% for char in characters %}
                                     <tr>
-                                        <td>{{ char.name }}</td>
+                                        <td>
+                                            {{ char.name }}
+                                            <a href="{{ url_for('main.character_progression', character_id=char.id) }}" 
+                                               class="ms-2" 
+                                               title="View progression history">
+                                                <i class="bi bi-graph-up"></i>
+                                            </a>
+                                        </td>
                                         <td>{{ char.level or '-' }}</td>
                                         <td>{{ char.character_class or '-' }}</td>
                                         <td>{{ char.race or '-' }}</td>

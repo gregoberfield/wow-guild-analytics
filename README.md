@@ -1,154 +1,175 @@
 # WoW Guild Analytics
 
-A Flask application that leverages the World of Warcraft Classic API to collect guild roster data and provide analytics on class distribution, race distribution, item levels, and more.
+A comprehensive Flask application for tracking and analyzing World of Warcraft Classic guild rosters using the Battle.net API. Monitor member changes, track character progression, and visualize guild composition with interactive charts.
 
 ## Features
 
-- **User Authentication**: Secure login system with password hashing
-- **Admin Panel**: User management for administrators
-- **Guild Roster Sync**: Fetch and store guild member data from Battle.net API (requires login)
-- **Auto-cleanup**: Re-syncing automatically removes members who left the guild
-- **Track Multiple Guilds**: Monitor rosters for multiple guilds
-- **Analytics Dashboards**: Interactive charts and visualizations
-- **Class & Spec Breakdown**: See class distribution and spec choices (level 60s)
-- **Race Distribution**: Visualize faction and race composition
-- **Character Details**: Level, spec, item level, achievements
-- **Sortable Tables**: Click any column to sort the roster
-- **Dark Theme**: Modern black background with blue accents
-- **RESTful API**: Programmatic access to all data
-- **Comprehensive Logging**: Track sync operations and changes
+### Core Features
+- **Guild Roster Management** - Sync and track multiple guild rosters
+- **Character Progression Tracking** - Monitor individual character level and gear progression over time
+- **Member History** - Complete audit trail of member additions and removals
+- **Analytics Dashboard** - Interactive charts for class, race, spec, and level distributions
+- **User Authentication** - Secure login system with role-based access control
+- **Admin Panel** - User management interface for administrators
+- **Dark Theme** - Modern, eye-friendly dark interface
+- **Auto-cleanup** - Automatically removes members who left the guild during re-sync
 
-## Setup Instructions
+## Quick Start
 
-### 1. Battle.net API Credentials
+### Prerequisites
+- Python 3.8+
+- Battle.net Developer Account
 
-1. Go to https://develop.battle.net/access/clients
-2. Create a new client
-3. Note your Client ID and Client Secret
-
-### 2. Environment Setup
-
-1. Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Edit `.env` and add your Battle.net credentials:
-   ```
-   BNET_CLIENT_ID=your-client-id-here
-   BNET_CLIENT_SECRET=your-client-secret-here
-   BNET_REGION=us  # or eu, kr, tw
-   ```
-
-### 3. Install Dependencies
-
-The virtual environment is already created. Activate it and install dependencies:
+### Installation
 
 ```bash
-source venv/bin/activate
+# Clone the repository
+cd wow-guild-analytics
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
-```
 
-### 4. Initialize Database with Authentication
+# Configure Battle.net API credentials
+# Edit config.py and add your Client ID and Secret
 
-Run the migration script to create the User table and default admin account:
-
-```bash
+# Run database migrations
 python migrate_add_users.py
-```
+python migrate_add_guild_history.py
+python migrate_add_character_progression.py
 
-This creates a default admin user:
-- **Username**: `admin`
-- **Password**: `admin123`
-
-⚠️ **IMPORTANT**: Change this password immediately after first login!
-
-### 5. Run the Application
-
-```bash
+# Start the application
 python run.py
 ```
 
-The application will be available at http://localhost:5000
+### First Login
 
-### 6. First Login
+Default admin credentials:
+```
+Username: admin
+Password: admin123
+```
+⚠️ **Change this password immediately after first login!**
 
-1. Navigate to http://localhost:5000
-2. Click "Login" in the navigation bar
-3. Enter:
-   - Username: `admin`
-   - Password: `admin123`
-4. Go to Admin → Edit User to change your password
+Access the application at: **http://localhost:5000**
 
-### 7. Sync Your Guild
+## Documentation
 
-1. Log in to your account (syncing requires authentication)
-2. Navigate to the "Sync Guild" page
-2. Enter your realm slug (e.g., "whitemane", "dreamscythe")
-3. Enter your guild name slug (e.g., "my-guild-name")
-4. Click "Sync Guild"
+Comprehensive documentation is available in the `docs/` directory:
 
-**Re-syncing:** You can re-sync a guild anytime to update the roster. The application will:
-- Add new members who joined
-- Update existing member information
-- **Automatically remove members who left the guild**
+- **[Setup Guide](docs/SETUP.md)** - Complete installation and configuration instructions
+- **[Features Guide](docs/FEATURES.md)** - Detailed description of all features and how to use them
+- **[Technical Documentation](docs/TECHNICAL.md)** - Architecture, database schema, and implementation details
 
-See [RESYNC_FEATURE.md](RESYNC_FEATURE.md) for detailed information about the re-sync functionality.
+## Usage Workflow
 
-## API Endpoints
+1. **Login** - Access the application with your credentials
+2. **Sync Guild Roster** - Navigate to Sync page, enter realm and guild name
+3. **Sync Character Details** - Click "Sync Character Details" on guild page for full data
+4. **View Analytics** - Explore charts and statistics on guild detail page
+5. **Track History** - Click "View History" to see member additions/removals
+6. **Monitor Progression** - Click chart icons next to character names to view their progression
 
-- `GET /api/guild/<guild_id>/analytics` - Get analytics for a guild
-- `GET /api/guild/<guild_id>/characters` - Get all characters in a guild
+## Technology Stack
+
+- **Backend**: Flask 3.0.0, SQLAlchemy 3.1.1, Flask-Login 0.6.3
+- **Database**: SQLite (easily upgradable to PostgreSQL)
+- **Frontend**: Bootstrap 5.3.0, Chart.js 4.4.0
+- **API**: Battle.net World of Warcraft Classic API
 
 ## Project Structure
 
+
 ```
 wow-guild-analytics/
-├── app/
-│   ├── __init__.py          # Flask app factory
-│   ├── models.py            # Database models
-│   ├── routes.py            # Web routes
-│   ├── bnet_api.py          # Battle.net API client
-│   ├── services.py          # Business logic
-│   ├── static/
-│   │   ├── css/
-│   │   │   └── style.css
-│   │   └── js/
-│   └── templates/
-│       ├── base.html
-│       ├── index.html
-│       ├── sync.html
-│       └── guild_detail.html
-├── venv/                    # Virtual environment
-├── config.py                # Configuration
-├── run.py                   # Application entry point
-├── requirements.txt         # Python dependencies
-└── .env                     # Environment variables (create this)
+├── app/                    # Application package
+│   ├── models.py          # Database models
+│   ├── routes.py          # Main routes
+│   ├── auth.py            # Authentication
+│   ├── admin.py           # Admin panel
+│   ├── services.py        # Business logic
+│   ├── bnet_api.py        # Battle.net API client
+│   ├── templates/         # Jinja2 templates
+│   └── static/            # CSS, JS, images
+├── docs/                   # Documentation
+├── instance/              # Database and instance files
+├── config.py              # Configuration
+├── run.py                 # Application entry point
+└── migrate_*.py           # Database migrations
 ```
 
-## Notes
+## API Endpoints
 
-- The application uses SQLite by default for simplicity
-- Data is cached in the database to reduce API calls
-- The Battle.net API has rate limits - be mindful when syncing large guilds
-- **Namespace Configuration:**
-  - **Classic Anniversary/Era (1.14.x)**: `profile-classic1x-{region}` (default)
-  - **Classic (Cataclysm/Wrath)**: `profile-classic-{region}`
-  - **Retail WoW**: `profile-{region}`
-  - Change the namespace in `bnet_api.py` if needed
+- `GET /api/guild/<id>/analytics` - Guild analytics JSON
+- `GET /api/guild/<id>/characters` - Guild character list JSON
+
+## Key Features
+
+### Character Progression Tracking
+- Automatic snapshots of level and item level during syncs
+- Only records when values actually change (no duplicates)
+- Visual charts showing progression over time
+- Automatic cleanup when characters leave guild
+
+### Member History
+- Complete audit trail of all member changes
+- Filterable by action type (added/removed)
+- Pagination for large histories
+- Summary statistics
+
+### Analytics Dashboard
+- Class and race distribution pie charts
+- Level distribution by class (stacked columns)
+- Level 60 breakdown by class
+- Spec distribution for max-level characters
+- All charts optimized for dark theme
+
+## Configuration
+
+Edit `config.py`:
+
+```python
+class Config:
+    # Flask
+    SECRET_KEY = 'your-secret-key-here'
+    
+    # Database
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///instance/guild_data.db'
+    
+    # Battle.net API
+    BNET_CLIENT_ID = 'your-client-id'
+    BNET_CLIENT_SECRET = 'your-client-secret'
+    BNET_REGION = 'us'  # or 'eu', 'kr', 'tw', 'cn'
+```
+
+## Security Notes
+
+- Change default admin password immediately
+- Use strong SECRET_KEY in production
+- Never commit real API credentials to version control
+- Use environment variables for sensitive data
+- Consider HTTPS for production deployments
 
 ## Troubleshooting
 
-### "Failed to get access token"
-- Check that your BNET_CLIENT_ID and BNET_CLIENT_SECRET are correct
-- Verify the credentials at https://develop.battle.net/access/clients
+**"No such table" error**
+- Run all migration scripts in order
 
-### "API request failed: 404"
-- Verify the realm slug and guild name slug are correct
-- Try lowercase with hyphens replacing spaces
-- Some special characters may need to be removed
+**"401 Unauthorized" from API**
+- Verify Battle.net credentials in config.py
 
-### "Could not fetch details for character"
-- Some characters may have privacy settings enabled
-- The API may be rate limiting requests
-- This is logged as a warning and won't stop the sync
+**"Character not found"**
+- Some characters have private profiles
+- Character may not be indexed by Battle.net yet
+
+See [Setup Guide](docs/SETUP.md) for more troubleshooting tips.
+
+## Support
+
+For detailed documentation, see the `docs/` directory:
+- Setup and installation: [docs/SETUP.md](docs/SETUP.md)
+- Feature descriptions: [docs/FEATURES.md](docs/FEATURES.md)
+- Technical details: [docs/TECHNICAL.md](docs/TECHNICAL.md)
