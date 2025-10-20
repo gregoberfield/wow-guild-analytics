@@ -275,6 +275,25 @@
 
 {% block scripts %}
 <script type="text/javascript">
+    // Configure Chart.js defaults for dark theme
+    Chart.defaults.color = '#e0e0e0';  // Default text color
+    Chart.defaults.borderColor = '#444';  // Default border color
+    Chart.defaults.backgroundColor = '#1a1a1a';  // Default background
+    
+    // Configure default scales for dark theme
+    Chart.defaults.scale.grid.color = '#333';
+    Chart.defaults.scale.ticks.color = '#e0e0e0';
+    Chart.defaults.scale.title.color = '#ffffff';
+    
+    // Configure default plugins for dark theme
+    Chart.defaults.plugins.legend.labels.color = '#e0e0e0';
+    Chart.defaults.plugins.title.color = '#ffffff';
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    Chart.defaults.plugins.tooltip.titleColor = '#ffffff';
+    Chart.defaults.plugins.tooltip.bodyColor = '#e0e0e0';
+    Chart.defaults.plugins.tooltip.borderColor = '#0d6efd';
+    Chart.defaults.plugins.tooltip.borderWidth = 1;
+    
     // Data from server
     const classDistributionData = {{ class_distribution | tojson | safe }};
     const raceDistributionData = {{ race_distribution | tojson | safe }};
@@ -349,7 +368,7 @@
             datasets: [{
                 label: 'Number of Characters',
                 data: raceValues,
-                backgroundColor: '#0070DE'
+                backgroundColor: '#69b4ff'
             }]
         },
         options: {
@@ -559,8 +578,8 @@
                     ctx.fillStyle = color;
                     ctx.fillRect(x - 40, y - 8, 10, 10);
                     
-                    // Draw spec name
-                    ctx.fillStyle = '#333';
+                    // Draw spec name (light color for dark background)
+                    ctx.fillStyle = '#e0e0e0';
                     ctx.textAlign = 'left';
                     ctx.fillText(`${specName} (${count})`, x - 27, y);
                 });

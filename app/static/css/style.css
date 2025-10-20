@@ -1,7 +1,10 @@
+/* Dark Theme Styles */
 body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    background-color: #000000 !important;
+    color: #e0e0e0 !important;
 }
 
 .container {
@@ -10,24 +13,95 @@ body {
 
 footer {
     margin-top: auto;
+    background-color: #1a1a1a !important;
+    color: #e0e0e0 !important;
 }
 
+/* Cards with dark theme */
 .card {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px rgba(255, 255, 255, 0.1);
     transition: transform 0.2s;
+    background-color: #1a1a1a !important;
+    border: 1px solid #333 !important;
+    color: #e0e0e0 !important;
 }
 
 .card:hover {
     transform: translateY(-5px);
 }
 
+.card-header {
+    background-color: #2a2a2a !important;
+    border-bottom: 1px solid #444 !important;
+    color: #e0e0e0 !important;
+}
+
+.card-body {
+    background-color: #1a1a1a !important;
+    color: #e0e0e0 !important;
+}
+
+/* Blue navbar/banner */
+.navbar {
+    background-color: #0d6efd !important;
+}
+
 .navbar-brand {
     font-weight: bold;
     font-size: 1.5rem;
+    color: #ffffff !important;
+}
+
+.navbar-nav .nav-link {
+    color: #ffffff !important;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #cfe2ff !important;
+}
+
+/* Dark table styles */
+.table {
+    color: #e0e0e0 !important;
+    background-color: #1a1a1a !important;
+    --bs-table-bg: #1a1a1a !important;
+    --bs-table-striped-bg: #1f1f1f !important;
+    --bs-table-hover-bg: #2a2a2a !important;
+    --bs-table-border-color: #333 !important;
 }
 
 .table th {
-    background-color: #f8f9fa;
+    background-color: #2a2a2a !important;
+    color: #ffffff !important;
+    border-color: #444 !important;
+}
+
+.table td {
+    border-color: #333 !important;
+    background-color: #1a1a1a !important;
+    color: #e0e0e0 !important;
+}
+
+.table tbody tr {
+    background-color: #1a1a1a !important;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: #1f1f1f !important;
+    color: #e0e0e0 !important;
+}
+
+.table-hover > tbody > tr:hover > * {
+    background-color: #2a2a2a !important;
+    color: #ffffff !important;
+}
+
+/* Table footer */
+.table tfoot td,
+.table tfoot th {
+    background-color: #2a2a2a !important;
+    color: #ffffff !important;
+    border-color: #444 !important;
 }
 
 /* Sortable table headers */
@@ -36,10 +110,20 @@ footer {
     width: 100%;
     cursor: pointer;
     user-select: none;
+    color: #ffffff !important;
 }
 
 .table thead th a:hover {
-    color: #0d6efd !important;
+    color: #69b4ff !important;
+}
+
+/* Remove text-dark class effects in tables */
+.table .text-dark {
+    color: #ffffff !important;
+}
+
+.table .text-end {
+    color: #e0e0e0 !important;
 }
 
 .table thead th i {
@@ -47,6 +131,146 @@ footer {
     margin-left: 0.25rem;
 }
 
+/* Form controls */
+.form-control {
+    background-color: #2a2a2a !important;
+    border-color: #444 !important;
+    color: #e0e0e0 !important;
+}
+
+.form-control:focus {
+    background-color: #333 !important;
+    border-color: #0d6efd !important;
+    color: #e0e0e0 !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.form-label {
+    color: #e0e0e0 !important;
+}
+
+.form-text {
+    color: #b0b0b0 !important;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7 !important;
+    border-color: #0a58ca !important;
+}
+
+.btn-success {
+    background-color: #198754 !important;
+    border-color: #198754 !important;
+}
+
+.btn-success:hover {
+    background-color: #157347 !important;
+    border-color: #146c43 !important;
+}
+
+/* Alerts */
+.alert-success {
+    background-color: #0f5132 !important;
+    border-color: #0f5132 !important;
+    color: #d1e7dd !important;
+}
+
+.alert-danger {
+    background-color: #842029 !important;
+    border-color: #842029 !important;
+    color: #f8d7da !important;
+}
+
+.alert-info {
+    background-color: #055160 !important;
+    border-color: #055160 !important;
+    color: #cff4fc !important;
+}
+
+/* Alert close buttons */
+.btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    color: #ffffff !important;
+}
+
+/* Links */
+a {
+    color: #69b4ff !important;
+}
+
+a:hover {
+    color: #9fcdff !important;
+}
+
+/* Canvas/Charts */
 canvas {
     max-height: 400px;
 }
+
+/* List groups */
+.list-group-item {
+    background-color: #1a1a1a !important;
+    border-color: #333 !important;
+    color: #e0e0e0 !important;
+}
+
+.list-group-item:hover {
+    background-color: #2a2a2a !important;
+}
+
+/* Badges */
+.badge {
+    background-color: #0d6efd !important;
+}
+
+/* Stats cards on guild detail page */
+.card .card-body h5 {
+    color: #69b4ff !important;
+}
+
+.card .card-body .display-4 {
+    color: #ffffff !important;
+}
+
+.text-muted {
+    color: #b0b0b0 !important;
+}
+
+small {
+    color: #b0b0b0 !important;
+}
+
+/* Code/pre blocks */
+code {
+    background-color: #2a2a2a !important;
+    color: #69b4ff !important;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+pre {
+    background-color: #2a2a2a !important;
+    color: #e0e0e0 !important;
+    border: 1px solid #444 !important;
+}
+
+/* Ordered/unordered lists */
+ol, ul {
+    color: #e0e0e0 !important;
+}
+
+/* Strong/bold text */
+strong {
+    color: #ffffff !important;
+}
+
