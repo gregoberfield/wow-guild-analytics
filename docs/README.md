@@ -8,6 +8,7 @@ Welcome to the WoW Guild Analytics documentation. This guide provides comprehens
 Complete installation and configuration instructions including:
 - Prerequisites and installation steps
 - Battle.net API setup
+- Azure OpenAI configuration (optional)
 - Database initialization
 - User management
 - Running the application
@@ -19,6 +20,7 @@ Detailed description of all features and how to use them:
 - Guild management and roster syncing
 - Character tracking and progression
 - Analytics and visualizations
+- **AI Raid Composer** (Azure OpenAI-powered)
 - Authentication and access control
 - Member history tracking
 - Tips and best practices
@@ -35,9 +37,19 @@ Architecture and implementation details for developers:
 - Testing recommendations
 - Future enhancements
 
+### [Security Guide](SECURITY.md) ⚠️ **IMPORTANT**
+Security best practices and credential management:
+- Environment variable configuration
+- Credential management (what to commit vs. what to protect)
+- Git security and `.gitignore` setup
+- Production deployment security
+- Pre-commit security checklist
+- Incident response procedures
+
 ## Quick Links
 
 - **Getting Started**: Start with [SETUP.md](SETUP.md) for installation
+- **Security First**: Read [SECURITY.md](SECURITY.md) before committing code ⚠️
 - **Using the App**: See [FEATURES.md](FEATURES.md) for feature descriptions
 - **Development**: Check [TECHNICAL.md](TECHNICAL.md) for architecture details
 

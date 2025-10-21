@@ -203,7 +203,7 @@
 {% if progression_entries %}
 <script>
     // Prepare data for chart (reverse order to show oldest to newest)
-    const progressionData = {{ progression_entries | reverse | tojson }};
+    const progressionData = {{ progression_data_for_chart | tojson }}.reverse();
     
     const labels = progressionData.map(entry => {
         const date = new Date(entry.timestamp);

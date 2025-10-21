@@ -1,0 +1,603 @@
+{% extends "base.html" %}
+
+{% block title %}{{ guild.name }} - AI Raid Composer - WoW Guild Analytics{% endblock %}
+
+{% block content %}
+<style>
+.character-name {
+    cursor: help;
+    text-decoration: underline dotted;
+    text-decoration-color: rgba(255, 255, 255, 0.3);
+}
+
+.character-name:hover {
+    text-decoration-color: rgba(255, 255, 255, 0.6);
+}
+
+.tooltip {
+    font-size: 0.9rem;
+}
+
+.tooltip-inner {
+    max-width: 300px;
+    text-align: left;
+    background-color: rgba(0, 0, 0, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+</style>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a href="{{ url_for('main.guild_detail', guild_id=guild.id) }}" class="btn btn-outline-secondary mb-2">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Guild
+                </a>
+                <h1><i class="bi bi-robot me-2"></i>AI Raid Composer</h1>
+                <p class="text-muted">{{ guild.name }} - {{ guild.realm }}</p>
+            </div>
+        </div>
+        
+        {% if not is_configured %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Azure OpenAI Not Configured</strong>
+            <p class="mb-0 mt-2">The AI Raid Composer requires Azure OpenAI configuration. Please set the following environment variables:</p>
+            <ul class="mt-2 mb-0">
+                <li><code>AZURE_OPENAI_ENDPOINT</code></li>
+                <li><code>AZURE_OPENAI_API_KEY</code></li>
+                <li><code>AZURE_OPENAI_DEPLOYMENT</code></li>
+            </ul>
+        </div>
+        {% endif %}
+        
+        {% if level_60_count == 0 %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>No Level 60 Characters</strong>
+            <p class="mb-0 mt-2">This guild has no level 60 characters yet. Raid composition suggestions require level 60 characters.</p>
+        </div>
+        {% endif %}
+        
+        <!-- Configuration Panel -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="bi bi-sliders me-2"></i>Raid Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="raidConfigForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="raidSize" class="form-label">Raid Size</label>
+                            <select class="form-select" id="raidSize" name="raid_size" {% if not is_configured or level_60_count == 0 %}disabled{% endif %}>
+                                <option value="20">20-person raid</option>
+                                <option value="25">25-person raid</option>
+                                <option value="40" selected>40-person raid</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="raidType" class="form-label">Raid Type</label>
+                            <select class="form-select" id="raidType" name="raid_type" {% if not is_configured or level_60_count == 0 %}disabled{% endif %}>
+                                <option value="General" selected>General Raid</option>
+                                <option value="Molten Core">Molten Core</option>
+                                <option value="Onyxia's Lair">Onyxia's Lair</option>
+                                <option value="Blackwing Lair">Blackwing Lair</option>
+                                <option value="Zul'Gurub">Zul'Gurub (20)</option>
+                                <option value="Ruins of Ahn'Qiraj">Ruins of Ahn'Qiraj (20)</option>
+                                <option value="Temple of Ahn'Qiraj">Temple of Ahn'Qiraj</option>
+                                <option value="Naxxramas">Naxxramas</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted">
+                                <i class="bi bi-people-fill me-1"></i>
+                                Available Level 60s: <strong>{{ level_60_count }}</strong>
+                            </span>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="generateBtn" {% if not is_configured or level_60_count == 0 %}disabled{% endif %}>
+                            <i class="bi bi-magic me-2"></i>Generate Raid Composition
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="text-center py-5" style="display: none;">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">AI is analyzing your roster and generating optimal composition...</p>
+        </div>
+        
+        <!-- Error Display -->
+        <div id="errorDisplay" class="alert alert-danger" style="display: none;">
+            <i class="bi bi-exclamation-circle me-2"></i>
+            <strong>Error:</strong> <span id="errorMessage"></span>
+        </div>
+        
+        <!-- Results Container -->
+        <div id="resultsContainer" style="display: none;">
+            <!-- Composition Summary -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-bar-chart me-2"></i>Composition Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Total</h6>
+                                    <p class="display-6" id="summaryTotal">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Tanks</h6>
+                                    <p class="display-6 text-primary" id="summaryTanks">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Healers</h6>
+                                    <p class="display-6 text-success" id="summaryHealers">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">DPS</h6>
+                                    <p class="display-6 text-danger" id="summaryDPS">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h6>Class Breakdown:</h6>
+                        <div id="classBreakdown" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Role Assignments -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="bi bi-shield-fill me-2"></i>Tanks</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul id="tanksList" class="list-unstyled mb-0"></ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="bi bi-heart-pulse-fill me-2"></i>Healers</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul id="healersList" class="list-unstyled mb-0"></ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-danger text-white">
+                            <h6 class="mb-0"><i class="bi bi-lightning-fill me-2"></i>DPS</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul id="dpsList" class="list-unstyled mb-0"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Group Assignments -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-people me-2"></i>Group Assignments</h5>
+                </div>
+                <div class="card-body">
+                    <div id="groupAssignments" class="row"></div>
+                </div>
+            </div>
+            
+            <!-- Recommendations -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-lightbulb me-2"></i>AI Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    <ul id="recommendationsList" class="mb-0"></ul>
+                </div>
+            </div>
+            
+            <!-- Alternatives -->
+            <div class="card mb-4" id="alternativesCard" style="display: none;">
+                <div class="card-header">
+                    <h5><i class="bi bi-arrow-left-right me-2"></i>Alternative Options</h5>
+                </div>
+                <div class="card-body">
+                    <ul id="alternativesList" class="mb-0"></ul>
+                </div>
+            </div>
+            
+            <!-- Model Info -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between text-muted small flex-wrap gap-3">
+                        <span><i class="bi bi-cpu me-1"></i>Model: <span id="modelInfo">-</span></span>
+                        <span><i class="bi bi-arrow-down-circle me-1"></i>Input Tokens: <span id="inputTokensInfo">-</span></span>
+                        <span><i class="bi bi-arrow-up-circle me-1"></i>Output Tokens: <span id="outputTokensInfo">-</span></span>
+                        <span><i class="bi bi-coin me-1"></i>Total Tokens: <span id="totalTokensInfo">-</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// WoW Classic class colors
+const CLASS_COLORS = {
+    'Warrior': '#C79C6E',
+    'Paladin': '#F58CBA',
+    'Hunter': '#ABD473',
+    'Rogue': '#FFF569',
+    'Priest': '#FFFFFF',
+    'Shaman': '#0070DE',
+    'Mage': '#69CCF0',
+    'Warlock': '#9482C9',
+    'Druid': '#FF7D0A'
+};
+
+// Parse character string (handles both "Name - Class" and "Name (Class)" formats)
+function parseCharacter(charString) {
+    // Handle null/undefined
+    if (!charString) {
+        return { name: 'Unknown', class: null, reason: null };
+    }
+    
+    // If it's already an object with name and class properties
+    if (typeof charString === 'object' && charString !== null) {
+        // Handle {"name": "X", "class": "Y", "reason": "Z"} format
+        if (charString.name && charString.class) {
+            return { 
+                name: charString.name, 
+                class: charString.class,
+                reason: charString.reason || null,
+                role: charString.role || null
+            };
+        }
+        // Handle {"class": "Y", "name": "X"} format (order doesn't matter)
+        if (charString.class && charString.name) {
+            return { 
+                name: charString.name, 
+                class: charString.class,
+                reason: charString.reason || null,
+                role: charString.role || null
+            };
+        }
+        // If object but no name/class, try to stringify and parse
+        try {
+            charString = JSON.stringify(charString);
+        } catch (e) {
+            charString = String(charString);
+        }
+    }
+    
+    // Convert to string if needed
+    charString = String(charString);
+    
+    // Handle string formats like "Charactername - Warrior" or "Charactername (Warrior)"
+    const dashMatch = charString.match(/^(.+?)\s*-\s*(.+)$/);
+    if (dashMatch) {
+        return { name: dashMatch[1].trim(), class: dashMatch[2].trim(), reason: null, role: null };
+    }
+    
+    const parenMatch = charString.match(/^(.+?)\s*\((.+?)\)$/);
+    if (parenMatch) {
+        return { name: parenMatch[1].trim(), class: parenMatch[2].trim(), reason: null, role: null };
+    }
+    
+    // If no class found, return as-is
+    return { name: charString, class: null, reason: null, role: null };
+}
+
+// Format character with class color and tooltip
+function formatCharacter(charString) {
+    const char = parseCharacter(charString);
+    const color = CLASS_COLORS[char.class] || '#FFFFFF';
+    
+    // Build tooltip text
+    let tooltipText = '';
+    if (char.reason) {
+        tooltipText = char.reason;
+    } else if (char.class) {
+        tooltipText = `${char.class}`;
+    }
+    
+    // Build the HTML with Bootstrap tooltip
+    const nameSpan = `<span style="color: ${color}; font-weight: 500;" 
+        data-bs-toggle="tooltip" 
+        data-bs-placement="top" 
+        data-bs-html="true"
+        title="${tooltipText ? tooltipText.replace(/"/g, '&quot;') : ''}"
+        class="character-name">${char.name}</span>`;
+    
+    const classSpan = char.class ? ` <span style="color: #888; font-size: 0.9em;">(${char.class})</span>` : '';
+    
+    return nameSpan + classSpan;
+}
+
+// Validate raid composition for duplicates and group structure
+function validateComposition(suggestion, raidSize) {
+    const issues = [];
+    
+    // Collect all character names
+    const allCharacters = [];
+    const seenNames = new Set();
+    
+    // Check raid_composition
+    ['tanks', 'healers', 'dps'].forEach(role => {
+        if (suggestion.raid_composition[role]) {
+            suggestion.raid_composition[role].forEach(char => {
+                const name = typeof char === 'object' ? char.name : char;
+                if (seenNames.has(name)) {
+                    issues.push(`DUPLICATE: ${name} appears multiple times in raid composition`);
+                }
+                seenNames.add(name);
+                allCharacters.push(name);
+            });
+        }
+    });
+    
+    // Check group assignments
+    const expectedGroups = Math.floor(raidSize / 5);
+    const actualGroups = suggestion.group_assignments ? suggestion.group_assignments.length : 0;
+    
+    if (actualGroups !== expectedGroups) {
+        issues.push(`GROUP COUNT: Expected ${expectedGroups} groups for ${raidSize}-person raid, got ${actualGroups}`);
+    }
+    
+    // Check each group has 5 members
+    const groupCharacters = new Set();
+    if (suggestion.group_assignments) {
+        suggestion.group_assignments.forEach((group, idx) => {
+            const memberCount = group.members ? group.members.length : 0;
+            if (memberCount !== 5) {
+                issues.push(`GROUP ${group.group_number}: Has ${memberCount} members, expected 5`);
+            }
+            
+            // Check for duplicates across groups
+            if (group.members) {
+                group.members.forEach(member => {
+                    const name = typeof member === 'object' ? member.name : member;
+                    if (groupCharacters.has(name)) {
+                        issues.push(`DUPLICATE IN GROUPS: ${name} appears in multiple groups`);
+                    }
+                    groupCharacters.add(name);
+                });
+            }
+        });
+    }
+    
+    // Check total character count
+    if (allCharacters.length !== raidSize) {
+        issues.push(`CHARACTER COUNT: Selected ${allCharacters.length} characters, expected ${raidSize}`);
+    }
+    
+    // Log issues
+    if (issues.length > 0) {
+        console.warn('⚠️ Composition Validation Issues:');
+        issues.forEach(issue => console.warn(`  - ${issue}`));
+        
+        // Show warning to user
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'alert alert-warning mt-3';
+        warningDiv.innerHTML = `
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>AI Composition Issues Detected:</strong>
+            <ul class="mb-0 mt-2">
+                ${issues.map(issue => `<li>${issue}</li>`).join('')}
+            </ul>
+            <p class="mb-0 mt-2"><small>The AI may need to regenerate with stricter guidelines. Try generating again.</small></p>
+        `;
+        document.getElementById('resultsContainer').insertBefore(
+            warningDiv, 
+            document.getElementById('resultsContainer').firstChild
+        );
+    } else {
+        console.log('✓ Composition validation passed');
+    }
+}
+
+document.getElementById('raidConfigForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const raidSize = document.getElementById('raidSize').value;
+    const raidType = document.getElementById('raidType').value;
+    
+    // Show loading, hide results and errors
+    document.getElementById('loadingIndicator').style.display = 'block';
+    document.getElementById('resultsContainer').style.display = 'none';
+    document.getElementById('errorDisplay').style.display = 'none';
+    document.getElementById('generateBtn').disabled = true;
+    
+    try {
+        const response = await fetch('{{ url_for("main.suggest_raid_composition", guild_id=guild.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                raid_size: parseInt(raidSize),
+                raid_type: raidType
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok || data.error) {
+            throw new Error(data.error || 'Failed to generate raid composition');
+        }
+        
+        // Debug: Log the response structure
+        console.log('AI Response:', data);
+        console.log('Sample tank:', data.suggestion.raid_composition.tanks[0]);
+        console.log('Sample group:', data.suggestion.group_assignments[0]);
+        if (data.suggestion.group_assignments[0] && data.suggestion.group_assignments[0].members) {
+            console.log('Sample group member:', data.suggestion.group_assignments[0].members[0]);
+        }
+        
+        // Validate the composition
+        validateComposition(data.suggestion, parseInt(raidSize));
+        
+        // Display results
+        displayResults(data);
+        
+    } catch (error) {
+        document.getElementById('errorMessage').textContent = error.message;
+        document.getElementById('errorDisplay').style.display = 'block';
+    } finally {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        document.getElementById('generateBtn').disabled = false;
+    }
+});
+
+function displayResults(data) {
+    const suggestion = data.suggestion;
+    
+    // Clear any previous validation warnings
+    const existingWarnings = document.querySelectorAll('#resultsContainer .alert-warning');
+    existingWarnings.forEach(warning => warning.remove());
+    
+    // Summary
+    document.getElementById('summaryTotal').textContent = suggestion.composition_summary.total_characters;
+    document.getElementById('summaryTanks').textContent = suggestion.composition_summary.tanks;
+    document.getElementById('summaryHealers').textContent = suggestion.composition_summary.healers;
+    document.getElementById('summaryDPS').textContent = suggestion.composition_summary.dps;
+    
+    // Class Breakdown
+    const classBreakdown = document.getElementById('classBreakdown');
+    classBreakdown.innerHTML = '';
+    for (const [className, count] of Object.entries(suggestion.composition_summary.class_breakdown)) {
+        classBreakdown.innerHTML += `<span class="badge bg-secondary">${className}: ${count}</span>`;
+    }
+    
+    // Tanks
+    const tanksList = document.getElementById('tanksList');
+    tanksList.innerHTML = '';
+    suggestion.raid_composition.tanks.forEach(tank => {
+        tanksList.innerHTML += `<li class="mb-1"><i class="bi bi-shield-fill me-2"></i>${formatCharacter(tank)}</li>`;
+    });
+    
+    // Healers
+    const healersList = document.getElementById('healersList');
+    healersList.innerHTML = '';
+    suggestion.raid_composition.healers.forEach(healer => {
+        healersList.innerHTML += `<li class="mb-1"><i class="bi bi-heart-pulse-fill me-2"></i>${formatCharacter(healer)}</li>`;
+    });
+    
+    // DPS
+    const dpsList = document.getElementById('dpsList');
+    dpsList.innerHTML = '';
+    console.log('DPS count in raid_composition:', suggestion.raid_composition.dps.length);
+    console.log('Expected DPS count:', suggestion.composition_summary.dps);
+    suggestion.raid_composition.dps.forEach(dps => {
+        dpsList.innerHTML += `<li class="mb-1"><i class="bi bi-lightning-fill me-2"></i>${formatCharacter(dps)}</li>`;
+    });
+    
+    // Group Assignments
+    const groupAssignments = document.getElementById('groupAssignments');
+    groupAssignments.innerHTML = '';
+    suggestion.group_assignments.forEach(group => {
+        let groupHtml = `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Group ${group.group_number}</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+        `;
+        // Handle both array of strings and array of objects
+        const members = Array.isArray(group.members) ? group.members : [];
+        members.forEach(member => {
+            // Pass member directly to formatCharacter - it handles both objects and strings
+            groupHtml += `<li class="mb-1"><small>${formatCharacter(member)}</small></li>`;
+        });
+        groupHtml += `
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+        groupAssignments.innerHTML += groupHtml;
+    });
+    
+    // Recommendations
+    const recommendationsList = document.getElementById('recommendationsList');
+    recommendationsList.innerHTML = '';
+    suggestion.recommendations.forEach(rec => {
+        recommendationsList.innerHTML += `<li class="mb-2">${rec}</li>`;
+    });
+    
+    // Alternatives
+    if (suggestion.alternatives && suggestion.alternatives.length > 0) {
+        const alternativesList = document.getElementById('alternativesList');
+        alternativesList.innerHTML = '';
+        console.log('Alternatives:', suggestion.alternatives);
+        suggestion.alternatives.forEach((alt, index) => {
+            console.log(`Alternative ${index}:`, alt, typeof alt);
+            // Alternatives can be character objects or text descriptions
+            let formattedAlt;
+            if (typeof alt === 'object' && alt !== null && (alt.name || alt.class)) {
+                // It's a character object - format it with colors
+                formattedAlt = formatCharacter(alt);
+            } else if (typeof alt === 'string') {
+                // It's already a string - use as is
+                formattedAlt = alt;
+            } else {
+                // Unknown format - try to display it reasonably
+                formattedAlt = JSON.stringify(alt);
+            }
+            alternativesList.innerHTML += `<li class="mb-2">${formattedAlt}</li>`;
+        });
+        document.getElementById('alternativesCard').style.display = 'block';
+    } else {
+        document.getElementById('alternativesCard').style.display = 'none';
+    }
+    
+    // Model Info
+    document.getElementById('modelInfo').textContent = data.model_used;
+    document.getElementById('inputTokensInfo').textContent = data.tokens_used.prompt.toLocaleString();
+    document.getElementById('outputTokensInfo').textContent = data.tokens_used.completion.toLocaleString();
+    document.getElementById('totalTokensInfo').textContent = data.tokens_used.total.toLocaleString();
+    
+    // Show results
+    document.getElementById('resultsContainer').style.display = 'block';
+    
+    // Initialize Bootstrap tooltips for all character names
+    setTimeout(() => {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }, 100);
+    
+    // Scroll to results
+    document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endblock %}

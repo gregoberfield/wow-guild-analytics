@@ -6,6 +6,7 @@ This document describes all major features of the WoW Guild Analytics applicatio
 - [Guild Management](#guild-management)
 - [Character Tracking](#character-tracking)
 - [Analytics & Visualizations](#analytics--visualizations)
+- [AI Raid Composer](#ai-raid-composer)
 - [Authentication & Access Control](#authentication--access-control)
 - [History & Progression Tracking](#history--progression-tracking)
 
@@ -167,6 +168,7 @@ Protected routes and administrative functions.
 **Authenticated Access Required:**
 - Sync guild roster
 - Sync character details
+- AI Raid Composer
 
 **Admin Access Required:**
 - User management
@@ -188,6 +190,103 @@ Comprehensive user management interface for administrators.
 **How to Access:**
 - Login as admin user
 - Navigate to `/admin/`
+
+---
+
+## AI Raid Composer
+
+**🤖 Azure OpenAI-Powered Raid Composition Suggestions**
+
+Leverage GPT-4o to generate optimal raid compositions based on your guild's level 60 characters.
+
+### Features
+
+**Intelligent Composition:**
+- Analyzes all level 60 characters in the guild
+- Considers class, spec, and item level
+- Optimizes for raid roles (tanks, healers, DPS)
+- Balances buffs, debuffs, and class synergies
+- Generates group assignments (8 groups for 40-person raids)
+
+**Supported Raid Types:**
+- General Raid
+- Molten Core
+- Onyxia's Lair
+- Blackwing Lair
+- Zul'Gurub (20)
+- Ruins of Ahn'Qiraj (20)
+- Temple of Ahn'Qiraj
+- Naxxramas
+
+**Raid Sizes:**
+- 20-person raids
+- 25-person raids
+- 40-person raids
+
+**Detailed Recommendations:**
+- Tank assignments with reasoning
+- Healer distribution across groups
+- DPS composition with class balance
+- Group assignments for optimal buffs/debuffs
+- Alternative composition suggestions
+- Strategic recommendations for specific encounters
+
+### How to Use
+
+1. **Navigate to AI Raid Composer:**
+   - Go to a guild detail page
+   - Click "AI Raid Composer" button
+   - Or navigate to `/guild/<id>/raid-composer`
+
+2. **Configure Raid:**
+   - Select raid size (20, 25, or 40)
+   - Select raid type (MC, BWL, Naxx, etc.)
+   - Click "Generate Raid Composition"
+
+3. **Review Results:**
+   - **Composition Summary:** Total count, tanks, healers, DPS by class
+   - **Role Assignments:** Detailed list of characters by role
+   - **Group Assignments:** 5-person groups with balanced composition
+   - **AI Recommendations:** Strategic advice for the composition
+   - **Alternative Options:** Backup suggestions if available
+
+### Requirements
+
+**Azure OpenAI Configuration:**
+- Azure OpenAI resource with GPT-4o deployment
+- Environment variables configured:
+  - `AZURE_OPENAI_ENDPOINT`
+  - `AZURE_OPENAI_API_KEY`
+  - `AZURE_OPENAI_DEPLOYMENT` (default: 'gpt-4o')
+
+**Guild Requirements:**
+- Guild must have level 60 characters
+- Characters must be synced with details (spec, item level)
+
+**User Access:**
+- Must be authenticated (logged in)
+- Available to all authenticated users (not admin-only)
+
+### How It Works
+
+1. **Data Collection:** Fetches all level 60 characters with class, spec, and item level
+2. **AI Analysis:** Sends character roster to GPT-4o with detailed prompts about WoW Classic raid strategy
+3. **Composition Generation:** AI generates optimal composition considering:
+   - Tank requirements (warriors with defensive stance, druids)
+   - Healer balance (priests, druids, paladins, shamans)
+   - DPS mix (melee vs. ranged, physical vs. casters)
+   - Class buffs (Paladin blessings, Shaman totems, etc.)
+   - Debuff slots (Curse of Elements, Shadow Weaving, etc.)
+   - Group synergies (Windfury totems for melee, mana users with Spirit, etc.)
+4. **Result Display:** Presents composition with group assignments and strategic recommendations
+
+### Notes
+
+- AI suggestions are recommendations, not requirements
+- Actual raid composition may vary based on player skill, gear, and encounter mechanics
+- The AI considers WoW Classic mechanics and meta strategies
+- Token usage and model information displayed for transparency
+- If Azure OpenAI is not configured, a warning message is displayed
 
 ---
 

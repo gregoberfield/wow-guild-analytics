@@ -107,6 +107,12 @@ class Config:
     BNET_CLIENT_ID = 'your-client-id-here'
     BNET_CLIENT_SECRET = 'your-client-secret-here'
     BNET_REGION = 'us'  # or 'eu', 'kr', 'tw', 'cn'
+    
+    # Azure OpenAI Configuration (Optional - for AI Raid Composer)
+    AZURE_OPENAI_ENDPOINT = os.environ.get('AZURE_OPENAI_ENDPOINT')  # e.g., 'https://your-resource.openai.azure.com/'
+    AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY')
+    AZURE_OPENAI_DEPLOYMENT = os.environ.get('AZURE_OPENAI_DEPLOYMENT') or 'gpt-4o'
+    AZURE_OPENAI_API_VERSION = os.environ.get('AZURE_OPENAI_API_VERSION') or '2024-08-01-preview'
 ```
 
 **Security Notes:**
@@ -115,7 +121,22 @@ class Config:
   ```python
   BNET_CLIENT_ID = os.environ.get('BNET_CLIENT_ID')
   BNET_CLIENT_SECRET = os.environ.get('BNET_CLIENT_SECRET')
+  AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY')
   ```
+
+**Azure OpenAI Setup (Optional):**
+The AI Raid Composer feature requires Azure OpenAI credentials. To enable this feature:
+1. Create an Azure OpenAI resource in the Azure Portal
+2. Deploy a GPT-4o model
+3. Set the following environment variables:
+   ```bash
+   export AZURE_OPENAI_ENDPOINT='https://your-resource.openai.azure.com/'
+   export AZURE_OPENAI_API_KEY='your-api-key'
+   export AZURE_OPENAI_DEPLOYMENT='gpt-4o'
+   ```
+4. The AI Raid Composer will be available to authenticated users at `/guild/<id>/raid-composer`
+
+If these variables are not set, the application will still work but the AI Raid Composer feature will be disabled.
 
 ### 5. Supported Regions
 

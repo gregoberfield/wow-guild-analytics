@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
 from app.services import GuildService
+from app.raid_composer import RaidComposerService
 from app.models import Guild, Character, GuildMemberHistory, CharacterProgressionHistory
 from app import db
 
@@ -180,9 +181,20 @@ def character_progression(character_id):
         if first_entry.average_item_level and latest_entry.average_item_level:
             ilvl_gain = latest_entry.average_item_level - first_entry.average_item_level
     
+    # Prepare data for chart (convert to dict for JSON serialization)
+    progression_data_for_chart = []
+    for entry in progression_entries:
+        progression_data_for_chart.append({
+            'character_level': entry.character_level,
+            'average_item_level': entry.average_item_level,
+            'equipped_item_level': entry.equipped_item_level,
+            'timestamp': entry.timestamp.isoformat() if entry.timestamp else None
+        })
+    
     return render_template('character_progression.html',
                          character=character,
                          progression_entries=progression_entries,
+                         progression_data_for_chart=progression_data_for_chart,
                          pagination=pagination,
                          first_entry=first_entry,
                          latest_entry=latest_entry,
@@ -217,3 +229,48 @@ def api_guild_characters(guild_id):
     """API endpoint for guild characters"""
     characters = Character.query.filter_by(guild_id=guild_id).all()
     return jsonify([char.to_dict() for char in characters])
+
+@main_bp.route('/guild/<int:guild_id>/raid-composer')
+@login_required
+def raid_composer(guild_id):
+    """AI-powered raid composition suggestion page"""
+    guild = Guild.query.get_or_404(guild_id)
+    
+    # Check if Azure OpenAI is configured
+    composer_service = RaidComposerService()
+    is_configured = composer_service.is_configured()
+    
+    # Get level 60 count
+    level_60_count = Character.query.filter_by(
+        guild_id=guild_id,
+        level=60
+    ).count()
+    
+    return render_template('raid_composer.html',
+                         guild=guild,
+                         level_60_count=level_60_count,
+                         is_configured=is_configured)
+
+@main_bp.route('/api/guild/<int:guild_id>/suggest-raid-composition', methods=['POST'])
+@login_required
+def suggest_raid_composition(guild_id):
+    """API endpoint for AI raid composition suggestions"""
+    guild = Guild.query.get_or_404(guild_id)
+    
+    # Get parameters from request
+    data = request.get_json() or {}
+    raid_size = data.get('raid_size', 40)
+    raid_type = data.get('raid_type', 'General')
+    
+    # Validate raid size
+    if raid_size not in [20, 25, 40]:
+        return jsonify({'error': 'Invalid raid size. Must be 20, 25, or 40.'}), 400
+    
+    # Call the AI service
+    composer_service = RaidComposerService()
+    result = composer_service.suggest_raid_composition(guild_id, raid_size, raid_type)
+    
+    if result['error']:
+        return jsonify(result), 500
+    
+    return jsonify(result)
