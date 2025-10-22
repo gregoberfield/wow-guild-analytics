@@ -40,9 +40,16 @@ pip install -r requirements.txt
 python migrate_add_users.py
 python migrate_add_guild_history.py
 python migrate_add_character_progression.py
+python migrate_add_last_login.py
 
 # Start the application
+# For development:
 python run.py
+# OR
+flask run
+
+# For production:
+./start_production.sh
 ```
 
 ### First Login
@@ -150,8 +157,34 @@ class Config:
 - Change default admin password immediately
 - Use strong SECRET_KEY in production
 - Never commit real API credentials to version control
-- Use environment variables for sensitive data
-- Consider HTTPS for production deployments
+- Use environment variables for sensitive data in `.env` file
+- HTTPS is required for production deployments (use Nginx + Let's Encrypt)
+- See [Security Guide](docs/SECURITY.md) for detailed security practices
+- See [Deployment Guide](docs/DEPLOYMENT.md) for production setup
+
+## Deployment
+
+### Development
+```bash
+flask run  # Auto-reload, debugging enabled
+```
+
+### Production
+```bash
+# Using Gunicorn (recommended)
+./start_production.sh
+
+# Or as a systemd service
+sudo systemctl start wow-guild-analytics
+```
+
+See the [Deployment Guide](docs/DEPLOYMENT.md) for detailed production deployment instructions including:
+- Gunicorn WSGI server setup
+- Systemd service configuration
+- Nginx reverse proxy setup
+- SSL/TLS with Let's Encrypt
+- Monitoring and maintenance
+- Performance optimization
 
 ## Troubleshooting
 
@@ -173,3 +206,5 @@ For detailed documentation, see the `docs/` directory:
 - Setup and installation: [docs/SETUP.md](docs/SETUP.md)
 - Feature descriptions: [docs/FEATURES.md](docs/FEATURES.md)
 - Technical details: [docs/TECHNICAL.md](docs/TECHNICAL.md)
+- Security practices: [docs/SECURITY.md](docs/SECURITY.md)
+- **Production deployment: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**

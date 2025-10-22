@@ -1,0 +1,36 @@
+[Unit]
+Description=WoW Guild Analytics - Gunicorn WSGI Server
+After=network.target
+
+[Service]
+Type=notify
+# User and group to run the service as (change to your user)
+User=www-data
+Group=www-data
+
+# Working directory (change to your application path)
+WorkingDirectory=/var/www/wow-guild-analytics
+
+# Environment variables
+EnvironmentFile=/var/www/wow-guild-analytics/.env
+
+# Start command
+ExecStart=/var/www/wow-guild-analytics/venv/bin/gunicorn \
+    -c /var/www/wow-guild-analytics/gunicorn.conf.py \
+    wsgi:app
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=wow-guild-analytics
+
+[Install]
+WantedBy=multi-user.target
