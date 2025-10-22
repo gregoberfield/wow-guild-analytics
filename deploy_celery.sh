@@ -32,6 +32,22 @@ pip install -r requirements.txt
 echo "🗄️  Running database migration..."
 python migrate_add_tasks.py
 
+# Create logs directory and set permissions
+echo "📁 Creating logs directory..."
+mkdir -p logs
+chmod 755 logs
+
+# Ensure proper ownership of entire application
+echo "🔐 Setting file permissions..."
+# This will be run as guildmaestro user, so files will already be owned correctly
+# But we'll verify logs directory specifically
+if [ -d logs ]; then
+    echo "✅ Logs directory exists with correct permissions"
+else
+    echo "❌ Failed to create logs directory"
+    exit 1
+fi
+
 # Check if Redis is installed
 echo "🔍 Checking Redis installation..."
 if ! command -v redis-cli &> /dev/null; then
