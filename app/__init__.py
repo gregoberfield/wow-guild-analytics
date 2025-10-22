@@ -100,5 +100,21 @@ def create_app(config_class=Config):
     
     with app.app_context():
         db.create_all()
+        
+        # Create default admin user if no users exist
+        from app.models import User
+        if User.query.count() == 0:
+            app.logger.info("No users found. Creating default admin user...")
+            admin = User(
+                username='admin',
+                email='admin@example.com',
+                is_admin=True,
+                is_active=True
+            )
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
+            app.logger.info("Default admin user created (username: admin, password: admin123)")
+            app.logger.warning("IMPORTANT: Change the default admin password immediately!")
     
     return app

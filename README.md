@@ -7,12 +7,16 @@ A comprehensive Flask application for tracking and analyzing World of Warcraft C
 ### Core Features
 - **Guild Roster Management** - Sync and track multiple guild rosters
 - **Character Progression Tracking** - Monitor individual character level and gear progression over time
-- **Member History** - Complete audit trail of member additions and removals
+- **Last Login Tracking** - See when members were last active in game
+- **Member History** - Complete audit trail of member additions and removals (excludes initial sync)
+- **AI Raid Composer** - GPT-4o powered optimal raid group suggestions
 - **Analytics Dashboard** - Interactive charts for class, race, spec, and level distributions
 - **User Authentication** - Secure login system with role-based access control
-- **Admin Panel** - User management interface for administrators
+- **Admin Panel** - User management interface with password reset
 - **Dark Theme** - Modern, eye-friendly dark interface
-- **Auto-cleanup** - Automatically removes members who left the guild during re-sync
+- **Production Ready** - Gunicorn WSGI server support with systemd integration
+
+For detailed feature documentation, see [docs/FEATURES.md](docs/FEATURES.md).
 
 ## Quick Start
 
@@ -54,10 +58,17 @@ flask run
 
 ### First Login
 
-Default admin credentials:
+Default admin credentials are automatically created on first run:
 ```
 Username: admin
 Password: admin123
+```
+
+**⚠️ IMPORTANT:** Change this password immediately after logging in!
+
+If admin user wasn't created, run:
+```bash
+python manage_admin.py create
 ```
 ⚠️ **Change this password immediately after first login!**
 

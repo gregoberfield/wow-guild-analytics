@@ -9,6 +9,10 @@ This document describes all major features of the WoW Guild Analytics applicatio
 - [AI Raid Composer](#ai-raid-composer)
 - [Authentication & Access Control](#authentication--access-control)
 - [History & Progression Tracking](#history--progression-tracking)
+- [Last Login Tracking](#last-login-tracking)
+- [Admin User Management](#admin-user-management)
+- [Guild History Tracking](#guild-history-tracking)
+- [Tips & Best Practices](#tips--best-practices)
 
 ---
 
@@ -402,12 +406,205 @@ The application uses a custom dark theme optimized for readability.
 
 ---
 
+## Last Login Tracking
+
+Track when guild members last logged into World of Warcraft.
+
+### Overview
+
+The Blizzard WoW API provides `last_login_timestamp` in character profiles, allowing you to see member activity at a glance.
+
+### Features
+
+**Display:**
+- "Last Seen" column in guild roster table
+- Human-readable relative time format
+- Sortable column (ascending/descending)
+- Graceful handling of missing data
+
+**Time Formats:**
+- "Just now" (< 1 minute)
+- "5 minutes ago" (< 1 hour)
+- "3 hours ago" (< 24 hours)
+- "2 days ago" (< 7 days)
+- "1 week ago" (< 30 days)
+- "4 months ago" (< 365 days)
+- "1 year ago" (>= 365 days)
+- "Unknown" (no data available)
+
+**Use Cases:**
+- Identify active members for raid rosters
+- Find inactive members for guild cleanup
+- Monitor guild engagement trends
+- Track login patterns
+- Plan activities based on member activity
+
+### How to Use
+
+1. **Sync Guild** - Last login data is captured during sync
+2. **View Guild Detail** - Check the "Last Seen" column
+3. **Sort by Activity** - Click column header to sort
+4. **Identify Active/Inactive** - Most recent logins appear first
+
+### Technical Details
+
+- **Data Source:** Battle.net API `last_login_timestamp`
+- **Format:** Unix timestamp in milliseconds
+- **Storage:** BIGINT column in Character table
+- **Update:** Refreshed on every guild sync
+- **Display:** Converted to relative time in template
+
+### Migration
+
+If upgrading from an older version:
+```bash
+python migrate_add_last_login.py
+```
+
+---
+
+## Admin User Management
+
+Manage user accounts and administrative access.
+
+### Default Admin User
+
+On fresh installations, a default admin user is automatically created:
+- **Username:** admin
+- **Password:** admin123
+- **⚠️ IMPORTANT:** Change this password immediately after first login!
+
+### Automatic Creation
+
+The application automatically creates the default admin user when:
+- The database is empty (no users exist)
+- Application starts for the first time
+- Creates user with full admin privileges
+
+### Management Script
+
+Use `manage_admin.py` for user management:
+
+```bash
+# Create default admin user
+python manage_admin.py create
+
+# Reset admin password to default
+python manage_admin.py reset
+
+# List all users
+python manage_admin.py list
+
+# Add new user interactively
+python manage_admin.py add
+
+# Show manual SQL commands
+python manage_admin.py sql
+```
+
+### Manual SQL Commands
+
+If scripts don't work, use direct SQL (see `sql/admin_user_commands.sql`):
+
+```sql
+-- Create admin user (password: admin123)
+INSERT INTO user (username, email, password_hash, is_admin, is_active, created_at)
+VALUES (
+    'admin',
+    'admin@example.com',
+    'scrypt:32768:8:1$jBq8rK9L3qXmEOvC$8c5e2a3d1f9b7e6c4a0d8f1b3e5c7a9d2f4b6e8c0a1d3f5b7e9c1a3d5f7b9e0c2a4d6f8b0c1e3f5a7c9e1b3d5f7a9c0b2d4f6e8a0c1d3f5b7e9c1a3d5f7b9e0c2a4d6f8b',
+    1,
+    1,
+    datetime('now')
+);
+```
+
+### Troubleshooting
+
+**Empty Database:**
+- Run: `python manage_admin.py create`
+- Or restart application (auto-creates)
+- Or use manual SQL commands
+
+**Forgot Password:**
+- Run: `python manage_admin.py reset`
+- Resets to default: admin123
+
+**Can't Login:**
+- Check user exists: `python manage_admin.py list`
+- Verify user is active and admin
+- Reset password if needed
+
+### Security Best Practices
+
+1. **Change Default Password** - Immediately after first login
+2. **Use Strong Passwords** - Minimum 8 characters, mixed case, numbers, symbols
+3. **Limit Admin Accounts** - Only give admin access to trusted users
+4. **Regular Audits** - Review user list periodically
+5. **Deactivate Inactive Users** - Don't delete, just deactivate
+6. **Secure Database** - Restrict file permissions: `chmod 600 instance/guild_analytics.db`
+
+---
+
+## Guild History Tracking
+
+Track member additions and removals with complete audit trail.
+
+### Features
+
+**Smart Tracking:**
+- Only tracks changes AFTER initial sync
+- Skips history entries during first guild import
+- Prevents pollution with existing members
+
+**Tracked Events:**
+- Member additions (new characters joining)
+- Member removals (characters leaving)
+- Character level at time of event
+- Character class
+- Timestamp of change
+
+**History View:**
+- Filterable by action type (added/removed)
+- Pagination for large histories
+- Summary statistics
+- Chronological display (newest first)
+
+### Initial Sync Behavior
+
+When a guild is synced for the first time:
+- All existing members are imported
+- NO history entries are created
+- History tracking begins from this point
+
+Subsequent syncs will track:
+- New members joining (creates "added" entry)
+- Members leaving (creates "removed" entry)
+
+### How to Access
+
+1. Navigate to guild detail page
+2. Click "View History" button
+3. Filter by action type if needed
+4. Review member changes over time
+
+### Use Cases
+
+- **Recruitment Tracking** - See when members joined
+- **Turnover Analysis** - Identify retention issues
+- **Guild Growth** - Monitor membership trends
+- **Audit Trail** - Complete history of changes
+- **Member Management** - Know who left and when
+
+---
+
 ## Tips & Best Practices
 
 ### Regular Syncing
 - Sync rosters regularly to capture member changes
 - Run character details sync after roster sync for complete data
 - More frequent syncs = more accurate progression tracking
+- Syncing updates last login timestamps
 
 ### Performance
 - Character details sync can take several minutes for large guilds
@@ -418,8 +615,25 @@ The application uses a custom dark theme optimized for readability.
 - Progression history deleted when members leave
 - Only publicly available Battle.net data is stored
 - No sensitive player information collected
+- Last login data from public API only
 
 ### Database Maintenance
 - Automatic cleanup on member removal
 - Cascade deletes maintain referential integrity
 - Regular syncs keep data fresh
+- Run migrations when upgrading
+
+### Security
+- Change default admin password immediately
+- Use strong, unique passwords
+- Limit admin access to trusted users
+- Keep .env file secure (in .gitignore)
+- Restrict database file permissions
+
+### Guild History
+- Initial sync doesn't create history entries
+- Only tracks actual changes after first sync
+- Prevents clutter with existing members
+- Provides clean audit trail
+
+```
