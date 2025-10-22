@@ -61,6 +61,42 @@ class CharacterProgressionHistory(db.Model):
     def __repr__(self):
         return f'<CharacterProgressionHistory char_id={self.character_id} level={self.character_level} ilvl={self.average_item_level} at {self.timestamp}>'
 
+class Task(db.Model):
+    """Track background task status for guild syncs and other long-running operations"""
+    id = db.Column(db.Integer, primary_key=True)
+    celery_id = db.Column(db.String(155), unique=True, nullable=False, index=True)  # Celery task UUID
+    task_type = db.Column(db.String(50), nullable=False)  # 'guild_sync', 'character_sync', etc.
+    status = db.Column(db.String(20), nullable=False, default='PENDING')  # PENDING, STARTED, SUCCESS, FAILURE, RETRY
+    guild_id = db.Column(db.Integer, db.ForeignKey('guild.id'), nullable=True)
+    progress = db.Column(db.Integer, default=0)  # 0-100 percentage
+    current_step = db.Column(db.String(200))  # Current operation description
+    result_message = db.Column(db.Text)  # Success message
+    error_message = db.Column(db.Text)  # Error details if failed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    started_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    
+    def to_dict(self):
+        """Convert task to dictionary for API responses"""
+        return {
+            'id': self.id,
+            'celery_id': self.celery_id,
+            'task_type': self.task_type,
+            'status': self.status,
+            'guild_id': self.guild_id,
+            'progress': self.progress,
+            'current_step': self.current_step,
+            'result_message': self.result_message,
+            'error_message': self.error_message,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'started_at': self.started_at.isoformat() if self.started_at else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'duration': (self.completed_at - self.started_at).total_seconds() if self.completed_at and self.started_at else None
+        }
+    
+    def __repr__(self):
+        return f'<Task {self.celery_id} {self.task_type} {self.status}>'
+
 class Character(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     bnet_id = db.Column(db.BigInteger, index=True)  # Battle.net character ID

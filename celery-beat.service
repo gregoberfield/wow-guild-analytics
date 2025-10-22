@@ -1,0 +1,43 @@
+[Unit]
+Description=Celery Beat Scheduler for WoW Guild Analytics
+After=network.target redis-server.service celery-worker.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=guildmanager
+Group=guildmanager
+WorkingDirectory=/home/guildmanager/wow-guild-analytics
+Environment="PATH=/home/guildmanager/wow-guild-analytics/venv/bin"
+Environment="PYTHONPATH=/home/guildmanager/wow-guild-analytics"
+
+# Load environment variables from .env file
+EnvironmentFile=/home/guildmanager/wow-guild-analytics/.env
+
+# Celery Beat command
+ExecStart=/home/guildmanager/wow-guild-analytics/venv/bin/celery -A app.celery_config.celery beat \
+    --loglevel=info \
+    --logfile=/home/guildmanager/wow-guild-analytics/logs/celery-beat.log \
+    --pidfile=/var/run/celery/celery-beat.pid \
+    --schedule=/var/run/celery/celerybeat-schedule.db
+
+# Runtime directory for PID file and schedule DB
+RuntimeDirectory=celery
+RuntimeDirectoryMode=0755
+
+# Process management
+Restart=always
+RestartSec=10
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Security settings
+PrivateTmp=true
+NoNewPrivileges=true
+
+# Logging
+StandardOutput=append:/home/guildmanager/wow-guild-analytics/logs/celery-beat.log
+StandardError=append:/home/guildmanager/wow-guild-analytics/logs/celery-beat-error.log
+
+[Install]
+WantedBy=multi-user.target

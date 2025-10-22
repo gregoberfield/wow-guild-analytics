@@ -1,0 +1,37 @@
+[Unit]
+Description=Flower - Celery Monitoring Dashboard for WoW Guild Analytics
+After=network.target redis-server.service celery-worker.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=guildmanager
+Group=guildmanager
+WorkingDirectory=/home/guildmanager/wow-guild-analytics
+Environment="PATH=/home/guildmanager/wow-guild-analytics/venv/bin"
+Environment="PYTHONPATH=/home/guildmanager/wow-guild-analytics"
+
+# Load environment variables from .env file
+EnvironmentFile=/home/guildmanager/wow-guild-analytics/.env
+
+# Flower command (monitoring dashboard on port 5555)
+ExecStart=/home/guildmanager/wow-guild-analytics/venv/bin/celery -A app.celery_config.celery flower \
+    --port=5555 \
+    --url_prefix=flower \
+    --basic_auth=admin:${FLOWER_PASSWORD}
+
+# Process management
+Restart=always
+RestartSec=10
+KillSignal=SIGTERM
+
+# Security settings
+PrivateTmp=true
+NoNewPrivileges=true
+
+# Logging
+StandardOutput=append:/home/guildmanager/wow-guild-analytics/logs/flower.log
+StandardError=append:/home/guildmanager/wow-guild-analytics/logs/flower-error.log
+
+[Install]
+WantedBy=multi-user.target

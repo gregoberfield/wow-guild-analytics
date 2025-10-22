@@ -1,0 +1,44 @@
+[Unit]
+Description=Celery Worker for WoW Guild Analytics
+After=network.target redis-server.service
+Requires=redis-server.service
+
+[Service]
+Type=forking
+User=guildmanager
+Group=guildmanager
+WorkingDirectory=/home/guildmanager/wow-guild-analytics
+Environment="PATH=/home/guildmanager/wow-guild-analytics/venv/bin"
+Environment="PYTHONPATH=/home/guildmanager/wow-guild-analytics"
+
+# Load environment variables from .env file
+EnvironmentFile=/home/guildmanager/wow-guild-analytics/.env
+
+# Celery worker command
+ExecStart=/home/guildmanager/wow-guild-analytics/venv/bin/celery -A app.celery_config.celery worker \
+    --loglevel=info \
+    --logfile=/home/guildmanager/wow-guild-analytics/logs/celery-worker.log \
+    --pidfile=/var/run/celery/celery-worker.pid \
+    --concurrency=2 \
+    --max-tasks-per-child=1000
+
+# Runtime directory for PID file
+RuntimeDirectory=celery
+RuntimeDirectoryMode=0755
+
+# Process management
+Restart=always
+RestartSec=10
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+# Security settings
+PrivateTmp=true
+NoNewPrivileges=true
+
+# Logging
+StandardOutput=append:/home/guildmanager/wow-guild-analytics/logs/celery-worker.log
+StandardError=append:/home/guildmanager/wow-guild-analytics/logs/celery-worker-error.log
+
+[Install]
+WantedBy=multi-user.target

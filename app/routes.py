@@ -2,8 +2,9 @@ from flask import Blueprint, render_template, request, jsonify, flash, redirect,
 from flask_login import login_required, current_user
 from app.services import GuildService
 from app.raid_composer import RaidComposerService
-from app.models import Guild, Character, GuildMemberHistory, CharacterProgressionHistory
+from app.models import Guild, Character, GuildMemberHistory, CharacterProgressionHistory, Task
 from app import db
+from datetime import datetime
 
 main_bp = Blueprint('main', __name__)
 
@@ -66,7 +67,7 @@ def guild_detail(guild_id):
 @main_bp.route('/sync', methods=['GET', 'POST'])
 @login_required
 def sync_guild():
-    """Sync guild roster from Battle.net"""
+    """Sync guild roster from Battle.net (now uses background task)"""
     if request.method == 'POST':
         realm_slug = request.form.get('realm_slug')
         guild_name_slug = request.form.get('guild_name_slug')
@@ -76,18 +77,33 @@ def sync_guild():
             return redirect(url_for('main.sync_guild'))
         
         try:
-            service = GuildService()
-            guild, member_count, removed_count = service.sync_guild_roster(realm_slug, guild_name_slug)
+            # Import here to avoid circular imports
+            from app.tasks import sync_guild_roster
             
-            # Build success message
-            success_msg = f'Successfully synced {member_count} members from {guild.name}'
-            if removed_count > 0:
-                success_msg += f' ({removed_count} member{"s" if removed_count != 1 else ""} removed)'
+            # Create task record
+            task = Task(
+                celery_id='pending',  # Will be updated when task starts
+                task_type='guild_sync',
+                status='PENDING',
+                current_step='Queuing sync task...'
+            )
+            db.session.add(task)
+            db.session.commit()
             
-            flash(success_msg, 'success')
-            return redirect(url_for('main.guild_detail', guild_id=guild.id))
+            # Queue background task
+            celery_task = sync_guild_roster.apply_async(
+                args=[realm_slug, guild_name_slug, task.id]
+            )
+            
+            # Update task with Celery ID
+            task.celery_id = celery_task.id
+            db.session.commit()
+            
+            flash('Guild sync started! You can monitor progress below.', 'info')
+            return redirect(url_for('main.task_status_page', task_id=task.id))
+            
         except Exception as e:
-            flash(f'Error syncing guild: {str(e)}', 'error')
+            flash(f'Error starting guild sync: {str(e)}', 'error')
             return redirect(url_for('main.sync_guild'))
     
     return render_template('sync.html')
@@ -95,13 +111,36 @@ def sync_guild():
 @main_bp.route('/guild/<int:guild_id>/sync-characters', methods=['POST'])
 @login_required
 def sync_character_details(guild_id):
-    """Sync detailed character information for a guild"""
+    """Sync detailed character information for a guild (now uses background task)"""
     try:
-        service = GuildService()
-        result = service.sync_character_details(guild_id)
-        flash(f'Character sync completed! Successfully updated {result["successful"]} out of {result["total"]} characters.', 'success')
+        # Import here to avoid circular imports
+        from app.tasks import sync_character_details as sync_char_task
+        
+        # Create task record
+        task = Task(
+            celery_id='pending',
+            task_type='character_sync',
+            status='PENDING',
+            guild_id=guild_id,
+            current_step='Queuing character sync task...'
+        )
+        db.session.add(task)
+        db.session.commit()
+        
+        # Queue background task
+        celery_task = sync_char_task.apply_async(
+            args=[guild_id, task.id]
+        )
+        
+        # Update task with Celery ID
+        task.celery_id = celery_task.id
+        db.session.commit()
+        
+        flash('Character sync started! You can monitor progress below.', 'info')
+        return redirect(url_for('main.task_status_page', task_id=task.id))
+        
     except Exception as e:
-        flash(f'Error syncing character details: {str(e)}', 'error')
+        flash(f'Error starting character sync: {str(e)}', 'error')
     
     return redirect(url_for('main.guild_detail', guild_id=guild_id))
 
@@ -275,3 +314,48 @@ def suggest_raid_composition(guild_id):
         return jsonify(result), 500
     
     return jsonify(result)
+
+# ============================================================================
+# Task Status and Monitoring Routes
+# ============================================================================
+
+@main_bp.route('/task/<int:task_id>')
+@login_required
+def task_status_page(task_id):
+    """Display task status page with real-time progress updates"""
+    task = Task.query.get_or_404(task_id)
+    return render_template('task_status.html', task=task)
+
+@main_bp.route('/api/task/<int:task_id>')
+def api_task_status(task_id):
+    """API endpoint to check task status (polled by frontend)"""
+    task = Task.query.get_or_404(task_id)
+    
+    response = task.to_dict()
+    
+    # Add redirect URL if task completed successfully
+    if task.status == 'SUCCESS' and task.guild_id:
+        response['redirect_url'] = url_for('main.guild_detail', guild_id=task.guild_id)
+    
+    return jsonify(response)
+
+@main_bp.route('/api/tasks/recent')
+@login_required
+def api_recent_tasks():
+    """API endpoint to get recent tasks"""
+    limit = request.args.get('limit', 10, type=int)
+    tasks = Task.query.order_by(Task.created_at.desc()).limit(limit).all()
+    return jsonify([task.to_dict() for task in tasks])
+
+@main_bp.route('/tasks')
+@login_required
+def task_list():
+    """Display list of all tasks"""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    
+    pagination = Task.query.order_by(Task.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    return render_template('task_list.html', pagination=pagination)
