@@ -39,7 +39,8 @@ def guild_detail(guild_id):
         'rank': Character.rank,
         'ilvl': Character.average_item_level,
         'gender': Character.gender,
-        'spec': Character.spec_name
+        'spec': Character.spec_name,
+        'last_seen': Character.last_login_timestamp
     }
     
     # Apply sorting

@@ -256,6 +256,17 @@
                                                 {% endif %}
                                             </a>
                                         </th>
+                                        <th>
+                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='last_seen', sort_order='asc' if sort_by == 'last_seen' and sort_order == 'desc' else 'desc') }}" 
+                                               class="text-decoration-none text-dark">
+                                                Last Seen
+                                                {% if sort_by == 'last_seen' %}
+                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                                {% else %}
+                                                    <i class="bi bi-arrow-down-up text-muted"></i>
+                                                {% endif %}
+                                            </a>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -275,6 +286,15 @@
                                         <td>{{ char.spec_name or '-' }}</td>
                                         <td>{{ char.average_item_level or '-' }}</td>
                                         <td>{{ char.rank if char.rank is not none else '-' }}</td>
+                                        <td>
+                                            {% if char.last_login_timestamp %}
+                                                <span class="last-seen-date" data-timestamp="{{ char.last_login_timestamp }}">
+                                                    {{ (char.last_login_timestamp / 1000) | int | timestamp_to_datetime | format_relative_time }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">Unknown</span>
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>

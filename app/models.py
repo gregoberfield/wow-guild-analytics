@@ -76,6 +76,7 @@ class Character(db.Model):
     equipped_item_level = db.Column(db.Integer)
     spec_name = db.Column(db.String(50))
     rank = db.Column(db.Integer)
+    last_login_timestamp = db.Column(db.BigInteger)  # Unix timestamp in milliseconds from Blizzard API
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
     guild_id = db.Column(db.Integer, db.ForeignKey('guild.id'), nullable=True)
     progression_history = db.relationship('CharacterProgressionHistory', backref='character', lazy=True, order_by='CharacterProgressionHistory.timestamp.desc()', cascade='all, delete-orphan')
@@ -95,5 +96,6 @@ class Character(db.Model):
             'equipped_item_level': self.equipped_item_level,
             'spec_name': self.spec_name,
             'rank': self.rank,
+            'last_login_timestamp': self.last_login_timestamp,
             'last_updated': self.last_updated.isoformat() if self.last_updated else None
         }

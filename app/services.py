@@ -24,8 +24,11 @@ class GuildService:
                 realm=guild_data.get('realm', {}).get('name')
             ).first()
             
+            # Track if this is the initial sync (no previous last_updated timestamp)
+            is_initial_sync = guild is None or guild.last_updated is None
+            
             if not guild:
-                current_app.logger.info("Creating new guild record in database")
+                current_app.logger.info("Creating new guild record in database (initial sync)")
                 guild = Guild(
                     name=guild_data.get('name'),
                     realm=guild_data.get('realm', {}).get('name'),
@@ -119,6 +122,7 @@ class GuildService:
                     character.faction = profile.get('faction', {}).get('name', '')
                     character.character_class = profile.get('character_class', {}).get('name', '')
                     character.race = profile.get('race', {}).get('name', '')
+                    character.last_login_timestamp = profile.get('last_login_timestamp')  # Unix timestamp in milliseconds
                     successful_profiles += 1
                     
                     # Get active spec (Classic uses talent trees, not rigid specs)
@@ -190,7 +194,8 @@ class GuildService:
                         current_app.logger.info(f"✓ Progression tracked for {character.name}")
                 
                 # Log new member addition if this is their first time in the guild
-                if is_new_character and guild.id:
+                # Skip history tracking during initial sync to avoid polluting history with existing members
+                if is_new_character and guild.id and not is_initial_sync:
                     history_entry = GuildMemberHistory(
                         guild_id=guild.id,
                         character_name=char_name,
@@ -221,15 +226,16 @@ class GuildService:
                 if not is_still_member:
                     current_app.logger.info(f"Removing '{character.name}' (no longer in guild)")
                     
-                    # Log member removal
-                    history_entry = GuildMemberHistory(
-                        guild_id=guild.id,
-                        character_name=character.name,
-                        character_level=character.level,
-                        character_class=character.character_class or 'Unknown',
-                        action='removed'
-                    )
-                    db.session.add(history_entry)
+                    # Log member removal (skip during initial sync)
+                    if not is_initial_sync:
+                        history_entry = GuildMemberHistory(
+                            guild_id=guild.id,
+                            character_name=character.name,
+                            character_level=character.level,
+                            character_class=character.character_class or 'Unknown',
+                            action='removed'
+                        )
+                        db.session.add(history_entry)
                     
                     # Delete progression history for this character in this guild
                     CharacterProgressionHistory.query.filter_by(
@@ -243,11 +249,15 @@ class GuildService:
             db.session.commit()
             
             current_app.logger.info(f"✅ Guild sync completed successfully!")
+            current_app.logger.info(f"   - Sync type: {'INITIAL' if is_initial_sync else 'UPDATE'}")
             current_app.logger.info(f"   - Total members: {len(members)}")
             current_app.logger.info(f"   - Profiles retrieved: {successful_profiles}")
             current_app.logger.info(f"   - Profiles unavailable: {failed_profiles}")
-            current_app.logger.info(f"   - Members added: {added_count}")
-            current_app.logger.info(f"   - Members removed: {removed_count}")
+            if not is_initial_sync:
+                current_app.logger.info(f"   - Members added: {added_count}")
+                current_app.logger.info(f"   - Members removed: {removed_count}")
+            else:
+                current_app.logger.info(f"   - History tracking: Skipped (initial sync)")
             
             return guild, len(members), removed_count
             
