@@ -4,7 +4,7 @@ After=network.target redis-server.service
 Requires=redis-server.service
 
 [Service]
-Type=forking
+Type=simple
 User=guildmaestro
 Group=guildmaestro
 WorkingDirectory=/var/www/guildmaestro
