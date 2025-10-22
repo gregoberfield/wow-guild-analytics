@@ -11,7 +11,7 @@ This guide covers deploying the background task processing system using Celery a
 ## Step 1: Install Dependencies
 
 ```bash
-cd /home/guildmanager/wow-guild-analytics
+cd /var/www/guildmaestro
 
 # Activate virtual environment
 source venv/bin/activate
@@ -215,7 +215,7 @@ sudo journalctl -u celery-worker -n 100
 sudo systemctl status redis-server
 
 # 2. Permission issues with logs directory
-sudo chown -R guildmanager:guildmanager /home/guildmanager/wow-guild-analytics/logs
+sudo chown -R guildmaestro:guildmaestro /var/www/guildmaestro/logs
 
 # 3. Python path issues
 which python  # Should show venv python
@@ -336,7 +336,7 @@ redis-cli info clients
 
 1. **SQLite database** (includes Task records)
    ```bash
-   /home/guildmanager/wow-guild-analytics/instance/guild_analytics.db
+   /var/www/guildmaestro/instance/guild_analytics.db
    ```
 
 2. **Redis data** (optional - tasks are transient)
@@ -380,7 +380,7 @@ sudo systemctl start celery-worker
 
 # Logs
 sudo journalctl -u celery-worker -f
-tail -f /home/guildmanager/wow-guild-analytics/logs/celery-worker.log
+tail -f /var/www/guildmaestro/logs/celery-worker.log
 
 # Redis
 redis-cli ping

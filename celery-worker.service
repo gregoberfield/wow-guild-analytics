@@ -5,19 +5,19 @@ Requires=redis-server.service
 
 [Service]
 Type=forking
-User=guildmanager
-Group=guildmanager
-WorkingDirectory=/home/guildmanager/wow-guild-analytics
-Environment="PATH=/home/guildmanager/wow-guild-analytics/venv/bin"
-Environment="PYTHONPATH=/home/guildmanager/wow-guild-analytics"
+User=guildmaestro
+Group=guildmaestro
+WorkingDirectory=/var/www/guildmaestro
+Environment="PATH=/var/www/guildmaestro/venv/bin"
+Environment="PYTHONPATH=/var/www/guildmaestro"
 
 # Load environment variables from .env file
-EnvironmentFile=/home/guildmanager/wow-guild-analytics/.env
+EnvironmentFile=/var/www/guildmaestro/.env
 
 # Celery worker command
-ExecStart=/home/guildmanager/wow-guild-analytics/venv/bin/celery -A app.celery_config.celery worker \
+ExecStart=/var/www/guildmaestro/venv/bin/celery -A app.celery_config.celery worker \
     --loglevel=info \
-    --logfile=/home/guildmanager/wow-guild-analytics/logs/celery-worker.log \
+    --logfile=/var/www/guildmaestro/logs/celery-worker.log \
     --pidfile=/var/run/celery/celery-worker.pid \
     --concurrency=2 \
     --max-tasks-per-child=1000
@@ -37,8 +37,8 @@ PrivateTmp=true
 NoNewPrivileges=true
 
 # Logging
-StandardOutput=append:/home/guildmanager/wow-guild-analytics/logs/celery-worker.log
-StandardError=append:/home/guildmanager/wow-guild-analytics/logs/celery-worker-error.log
+StandardOutput=append:/var/www/guildmaestro/logs/celery-worker.log
+StandardError=append:/var/www/guildmaestro/logs/celery-worker-error.log
 
 [Install]
 WantedBy=multi-user.target

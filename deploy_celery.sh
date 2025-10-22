@@ -9,10 +9,10 @@ echo "║  WoW Guild Analytics - Celery + Redis Deployment            ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
-# Check if running as guildmanager user
-if [ "$USER" != "guildmanager" ]; then
-    echo "⚠️  Warning: This script should be run as 'guildmanager' user"
-    echo "Switch user: sudo -u guildmanager -i"
+# Check if running as guildmaestro user
+if [ "$USER" != "guildmaestro" ]; then
+    echo "⚠️  Warning: This script should be run as 'guildmaestro' user"
+    echo "Switch user: sudo -u guildmaestro -i"
     read -p "Continue anyway? (y/N) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -99,7 +99,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "✅ Deployment Complete!"
 echo ""
 echo "📖 Next Steps:"
-echo "  1. Restart Flask app: sudo systemctl restart wow-guild-analytics"
+echo "  1. Restart Flask app: sudo systemctl restart guildmaestro"
 echo "  2. Test guild sync from web interface"
 echo "  3. Access Flower dashboard: https://yourdomain.com/flower/"
 echo "  4. Monitor logs: sudo journalctl -u celery-worker -f"

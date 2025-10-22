@@ -5,19 +5,19 @@ Requires=redis-server.service
 
 [Service]
 Type=simple
-User=guildmanager
-Group=guildmanager
-WorkingDirectory=/home/guildmanager/wow-guild-analytics
-Environment="PATH=/home/guildmanager/wow-guild-analytics/venv/bin"
-Environment="PYTHONPATH=/home/guildmanager/wow-guild-analytics"
+User=guildmaestro
+Group=guildmaestro
+WorkingDirectory=/var/www/guildmaestro
+Environment="PATH=/var/www/guildmaestro/venv/bin"
+Environment="PYTHONPATH=/var/www/guildmaestro"
 
 # Load environment variables from .env file
-EnvironmentFile=/home/guildmanager/wow-guild-analytics/.env
+EnvironmentFile=/var/www/guildmaestro/.env
 
 # Celery Beat command
-ExecStart=/home/guildmanager/wow-guild-analytics/venv/bin/celery -A app.celery_config.celery beat \
+ExecStart=/var/www/guildmaestro/venv/bin/celery -A app.celery_config.celery beat \
     --loglevel=info \
-    --logfile=/home/guildmanager/wow-guild-analytics/logs/celery-beat.log \
+    --logfile=/var/www/guildmaestro/logs/celery-beat.log \
     --pidfile=/var/run/celery/celery-beat.pid \
     --schedule=/var/run/celery/celerybeat-schedule.db
 
@@ -36,8 +36,8 @@ PrivateTmp=true
 NoNewPrivileges=true
 
 # Logging
-StandardOutput=append:/home/guildmanager/wow-guild-analytics/logs/celery-beat.log
-StandardError=append:/home/guildmanager/wow-guild-analytics/logs/celery-beat-error.log
+StandardOutput=append:/var/www/guildmaestro/logs/celery-beat.log
+StandardError=append:/var/www/guildmaestro/logs/celery-beat-error.log
 
 [Install]
 WantedBy=multi-user.target
