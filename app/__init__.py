@@ -14,7 +14,11 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    db.init_app(app)
+    # Initialize SQLAlchemy with engine options if using PostgreSQL
+    if hasattr(config_class, 'SQLALCHEMY_ENGINE_OPTIONS'):
+        db.init_app(app)
+    else:
+        db.init_app(app)
     
     # Initialize Flask-Login
     login_manager.init_app(app)
