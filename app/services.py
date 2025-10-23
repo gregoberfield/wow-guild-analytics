@@ -450,6 +450,10 @@ class GuildService:
                 except Exception as e:
                     failed += 1
                     error_msg = str(e)
+                    # Log ALL errors temporarily for debugging
+                    current_app.logger.error(f"SYNC ERROR for '{character.name}': {error_msg}")
+                    import traceback
+                    current_app.logger.error(f"Traceback: {traceback.format_exc()}")
                     if "404" in error_msg:
                         current_app.logger.debug(f"Profile not found for '{character.name}'")
                     else:
