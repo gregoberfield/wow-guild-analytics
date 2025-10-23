@@ -491,7 +491,7 @@ class GuildService:
                     # Handle 404s gracefully - these are expected for some characters
                     if "404" in error_msg:
                         skipped += 1
-                        current_app.logger.debug(f"Character '{character.name}' not found in API (may be deleted/transferred)")
+                        current_app.logger.debug(f"Skipping '{character.name}' - not indexed by Battle.net API (common for inactive/low-level characters)")
                     else:
                         # Log unexpected errors
                         failed += 1

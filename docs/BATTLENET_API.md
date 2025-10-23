@@ -8,6 +8,26 @@ This document details all available data fields from the Battle.net API for WoW 
 
 ---
 
+## Important: API Indexing Limitations
+
+**Not all guild members are guaranteed to be available via the character profile API.**
+
+The Battle.net API has two separate systems:
+- **Guild Roster API**: Returns ALL current guild members (always complete)
+- **Character Profile API**: Only returns characters that have been indexed
+
+### Characters That May Return 404
+
+Characters may not be indexed by the profile API if they:
+- Haven't logged in recently (exact threshold unknown, appears to be several weeks)
+- Are low level and inactive
+- Are freshly created or recently transferred
+- Haven't been "pinged" by Blizzard's indexing system
+
+**This is expected behavior, not a bug.** When syncing guild members, some characters will naturally return 404 errors and should be skipped gracefully. The roster API will still show them as guild members, but their detailed stats won't be available until they log in and get re-indexed.
+
+---
+
 ## Base Character Profile Endpoint
 
 **Endpoint:** `/profile/wow/character/{realm-slug}/{character-name}`  
