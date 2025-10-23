@@ -382,7 +382,8 @@
                                 </li>
                             </ul>
                             <div class="text-center text-muted small">
-                                Showing {{ ((pagination.page - 1) * per_page) + 1 }} - {{ min(pagination.page * per_page, total_characters) }} of {{ total_characters }} members
+                                {% set end_item = pagination.page * per_page if pagination.page * per_page < total_characters else total_characters %}
+                                Showing {{ ((pagination.page - 1) * per_page) + 1 }} - {{ end_item }} of {{ total_characters }} members
                             </div>
                         </nav>
                         {% elif per_page == 0 %}
