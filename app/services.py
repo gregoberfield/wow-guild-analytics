@@ -426,6 +426,19 @@ class GuildService:
                         character.spec_name = ''
                         current_app.logger.warning(f"Could not fetch spec for {character.name}: {str(spec_error)}")
                     
+                    # Fetch character media (avatar)
+                    try:
+                        media = self.api.get_character_media(realm_slug, character.name)
+                        # Extract avatar URL from assets
+                        for asset in media.get('assets', []):
+                            if asset.get('key') == 'avatar':
+                                character.avatar_url = asset.get('value')
+                                current_app.logger.debug(f"✅ {character.name}: Avatar URL updated")
+                                break
+                    except Exception as media_error:
+                        # Avatar is optional, don't fail if not available
+                        current_app.logger.debug(f"Could not fetch media for {character.name}: {str(media_error)}")
+                    
                     character.last_updated = datetime.utcnow()
                     successful += 1
 

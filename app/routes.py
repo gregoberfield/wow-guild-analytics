@@ -16,10 +16,20 @@ def index():
 
 @main_bp.route('/guild/<int:guild_id>')
 def guild_detail(guild_id):
-    """Guild detail page with analytics"""
+    """Guild detail page with analytics and pagination"""
     # Get sorting parameters from query string
     sort_by = request.args.get('sort_by', 'level')  # default sort by level
     sort_order = request.args.get('sort_order', 'desc')  # default descending
+    
+    # Get pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    search = request.args.get('search', '', type=str).strip()
+    
+    # Validate per_page (20, 50, 100, or 0 for all)
+    valid_per_page = [20, 50, 100, 0]
+    if per_page not in valid_per_page:
+        per_page = 20
     
     service = GuildService()
     analytics = service.get_guild_analytics(guild_id)
@@ -28,8 +38,14 @@ def guild_detail(guild_id):
         flash('Guild not found', 'error')
         return redirect(url_for('main.index'))
     
-    # Get all characters for this guild and apply sorting
-    characters = Character.query.filter_by(guild_id=guild_id)
+    # Get all characters for this guild
+    characters_query = Character.query.filter_by(guild_id=guild_id)
+    
+    # Apply search filter if provided
+    if search:
+        characters_query = characters_query.filter(
+            Character.name.ilike(f'%{search}%')
+        )
     
     # Map sort_by parameter to Character model attributes
     valid_sort_columns = {
@@ -48,19 +64,36 @@ def guild_detail(guild_id):
     if sort_by in valid_sort_columns:
         sort_column = valid_sort_columns[sort_by]
         if sort_order == 'asc':
-            characters = characters.order_by(sort_column.asc())
+            characters_query = characters_query.order_by(sort_column.asc())
         else:
-            characters = characters.order_by(sort_column.desc())
+            characters_query = characters_query.order_by(sort_column.desc())
     else:
         # Default sorting
-        characters = characters.order_by(Character.level.desc())
+        characters_query = characters_query.order_by(Character.level.desc())
     
-    characters = characters.all()
+    # Get total count before pagination
+    total_characters = characters_query.count()
     
-    # Add characters and sorting info to analytics
+    # Apply pagination (if per_page is 0, show all)
+    if per_page == 0:
+        characters = characters_query.all()
+        pagination = None
+    else:
+        pagination = characters_query.paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False
+        )
+        characters = pagination.items
+    
+    # Add characters and pagination info to analytics
     analytics['characters'] = characters
     analytics['sort_by'] = sort_by
     analytics['sort_order'] = sort_order
+    analytics['pagination'] = pagination
+    analytics['per_page'] = per_page
+    analytics['search'] = search
+    analytics['total_characters'] = total_characters
     
     return render_template('guild_detail.html', **analytics)
 

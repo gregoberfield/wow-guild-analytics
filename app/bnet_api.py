@@ -117,6 +117,13 @@ class BattleNetAPI:
         params = {'namespace': self.namespace}
         return self._make_request(endpoint, params)
     
+    def get_character_media(self, realm_slug, character_name_slug):
+        """Get character media (avatar, renders)"""
+        normalized_name = self._normalize_character_name(character_name_slug)
+        endpoint = f"/profile/wow/character/{realm_slug}/{normalized_name}/character-media"
+        params = {'namespace': self.namespace}
+        return self._make_request(endpoint, params)
+    
     def get_primary_spec_from_talents(self, spec_data):
 
         """
