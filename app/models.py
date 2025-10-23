@@ -115,6 +115,11 @@ class Character(db.Model):
     last_login_timestamp = db.Column(db.BigInteger)  # Unix timestamp in milliseconds from Blizzard API
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
     guild_id = db.Column(db.Integer, db.ForeignKey('guild.id'), nullable=True)
+    
+    # Professions - storing as "ProfessionName:SkillLevel" or None
+    profession_1 = db.Column(db.String(100))  # e.g., "Alchemy:300"
+    profession_2 = db.Column(db.String(100))  # e.g., "Herbalism:300"
+    
     progression_history = db.relationship('CharacterProgressionHistory', backref='character', lazy=True, order_by='CharacterProgressionHistory.timestamp.desc()', cascade='all, delete-orphan')
     
     def to_dict(self):
@@ -133,5 +138,7 @@ class Character(db.Model):
             'spec_name': self.spec_name,
             'rank': self.rank,
             'last_login_timestamp': self.last_login_timestamp,
-            'last_updated': self.last_updated.isoformat() if self.last_updated else None
+            'last_updated': self.last_updated.isoformat() if self.last_updated else None,
+            'profession_1': self.profession_1,
+            'profession_2': self.profession_2
         }
