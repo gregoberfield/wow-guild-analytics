@@ -245,11 +245,11 @@
                                                 {% endif %}
                                             </a>
                                         </th>
-                                        <th>Professions</th>
                                         <th>
                                             <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='rank', sort_order='asc' if sort_by == 'rank' and sort_order == 'desc' else 'desc') }}" 
                                                class="text-decoration-none text-dark">
                                                 Rank
+
                                                 {% if sort_by == 'rank' %}
                                                     <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
                                                 {% else %}
@@ -286,24 +286,6 @@
                                         <td>{{ char.race or '-' }}</td>
                                         <td>{{ char.spec_name or '-' }}</td>
                                         <td>{{ char.average_item_level or '-' }}</td>
-                                        <td>
-                                            {% if char.profession_1 or char.profession_2 %}
-                                                {% if char.profession_1 %}
-                                                    <span class="badge bg-secondary me-1" title="{{ char.profession_1 }}">
-                                                        {{ char.profession_1.split(':')[0] if ':' in char.profession_1 else char.profession_1 }}
-                                                        <small>({{ char.profession_1.split(':')[1] if ':' in char.profession_1 else '' }})</small>
-                                                    </span>
-                                                {% endif %}
-                                                {% if char.profession_2 %}
-                                                    <span class="badge bg-secondary" title="{{ char.profession_2 }}">
-                                                        {{ char.profession_2.split(':')[0] if ':' in char.profession_2 else char.profession_2 }}
-                                                        <small>({{ char.profession_2.split(':')[1] if ':' in char.profession_2 else '' }})</small>
-                                                    </span>
-                                                {% endif %}
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
                                         <td>{{ char.rank if char.rank is not none else '-' }}</td>
                                         <td>
                                             {% if char.last_login_timestamp %}

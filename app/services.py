@@ -426,41 +426,9 @@ class GuildService:
                         character.spec_name = ''
                         current_app.logger.warning(f"Could not fetch spec for {character.name}: {str(spec_error)}")
                     
-                    # Fetch professions
-                    try:
-                        profs = self.api.get_character_professions(realm_slug, character.name)
-                        primaries = profs.get('primaries', [])
-                        
-                        # Clear existing professions
-                        character.profession_1 = None
-                        character.profession_2 = None
-                        
-                        # Store up to 2 primary professions
-                        # Primary professions: Alchemy, Blacksmithing, Enchanting, Engineering, 
-                        # Herbalism, Inscription, Jewelcrafting, Leatherworking, Mining, Skinning, Tailoring
-                        for idx, prof in enumerate(primaries):
-                            if idx >= 2:
-                                break
-                            prof_name = prof.get('profession', {}).get('name', '')
-                            skill_level = prof.get('skill_points', 0)
-                            max_skill = prof.get('max_skill_points', 300)
-                            
-                            # Format: "ProfessionName:Current/Max"
-                            prof_str = f"{prof_name}:{skill_level}/{max_skill}"
-                            
-                            if idx == 0:
-                                character.profession_1 = prof_str
-                            else:
-                                character.profession_2 = prof_str
-                        
-                        if character.profession_1 or character.profession_2:
-                            current_app.logger.debug(f"✅ {character.name} professions: {character.profession_1}, {character.profession_2}")
-                    except Exception as prof_error:
-                        # Professions might not be available for all characters
-                        current_app.logger.debug(f"Could not fetch professions for {character.name}: {str(prof_error)}")
-                    
                     character.last_updated = datetime.utcnow()
                     successful += 1
+
                     
                     # Commit every 25 characters to avoid losing progress
                     if idx % 25 == 0:

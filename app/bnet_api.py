@@ -117,14 +117,8 @@ class BattleNetAPI:
         params = {'namespace': self.namespace}
         return self._make_request(endpoint, params)
     
-    def get_character_professions(self, realm_slug, character_name_slug):
-        """Get character professions"""
-        normalized_name = self._normalize_character_name(character_name_slug)
-        endpoint = f"/profile/wow/character/{realm_slug}/{normalized_name}/professions"
-        params = {'namespace': self.namespace}
-        return self._make_request(endpoint, params)
-    
     def get_primary_spec_from_talents(self, spec_data):
+
         """
         Extract primary specialization from Classic talent tree data.
         In Classic, characters have 3 talent trees and can distribute points across them.
