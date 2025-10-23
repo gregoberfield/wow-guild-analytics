@@ -422,7 +422,11 @@ class GuildService:
                             last_error = api_error
                             error_msg = str(api_error)
                             
-                            # Check if this is a retryable error
+                            # 404 errors are permanent - don't retry
+                            if "404" in error_msg:
+                                raise api_error
+                            
+                            # Check if this is a retryable error (503, 504, 500, timeouts)
                             is_retryable = any(code in error_msg for code in ['504', '503', '500', 'timeout', 'connection'])
                             
                             if is_retryable and attempt < max_retries - 1:
@@ -483,16 +487,15 @@ class GuildService:
                         db.session.commit()
                     
                 except Exception as e:
-                    failed += 1
                     error_msg = str(e)
-                    # Log ALL errors temporarily for debugging
-                    current_app.logger.error(f"SYNC ERROR for '{character.name}': {error_msg}")
-                    import traceback
-                    current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+                    # Handle 404s gracefully - these are expected for some characters
                     if "404" in error_msg:
-                        current_app.logger.debug(f"Profile not found for '{character.name}'")
+                        skipped += 1
+                        current_app.logger.debug(f"Character '{character.name}' not found in API (may be deleted/transferred)")
                     else:
-                        current_app.logger.warning(f"Error fetching '{character.name}': {error_msg}")
+                        # Log unexpected errors
+                        failed += 1
+                        current_app.logger.warning(f"Error syncing '{character.name}': {error_msg}")
             
             # Final commit
             db.session.commit()
