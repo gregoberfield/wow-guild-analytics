@@ -73,13 +73,13 @@ class BattleNetAPI:
     def _normalize_character_name(self, name):
         """
         Normalize character name for API calls.
-        IMPORTANT: We must preserve special characters (accents, umlauts) and only URL-encode them.
+        IMPORTANT: We must preserve special characters (accents, umlauts).
+        The requests library will handle URL encoding automatically.
         Removing accents causes wrong character matches (e.g., Bunnycàkes → bunnycakes fetches wrong char).
         """
         # Convert to lowercase (API is case-insensitive but prefers lowercase)
+        # Do NOT manually URL-encode - requests.get() will handle this automatically
         normalized = name.lower()
-        # URL encode special characters (preserves accents: à becomes %C3%A0)
-        normalized = quote(normalized, safe='')
         return normalized
     
     def get_guild_roster(self, realm_slug, guild_name_slug):
