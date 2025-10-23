@@ -23,3 +23,7 @@ class Config:
     GUILD_NAME = os.environ.get('GUILD_NAME', '')
     GUILD_REALM = os.environ.get('GUILD_REALM', '')
     GUILD_REALM_SLUG = os.environ.get('GUILD_REALM_SLUG', '')  # lowercase with hyphens
+    
+    # API Retry configuration
+    API_MAX_RETRIES = int(os.environ.get('API_MAX_RETRIES', '3'))  # Max retries for failed API calls
+    API_RETRY_DELAY = float(os.environ.get('API_RETRY_DELAY', '1.0'))  # Initial delay in seconds (exponential backoff)

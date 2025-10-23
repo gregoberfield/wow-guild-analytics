@@ -399,8 +399,36 @@ class GuildService:
                 #     continue
                 
                 try:
-                    # Fetch character profile
-                    profile = self.api.get_character_profile(realm_slug, character.name)
+                    # Retry logic for transient API errors (504, 503, 500, connection errors)
+                    max_retries = current_app.config.get('API_MAX_RETRIES', 3)
+                    retry_delay = current_app.config.get('API_RETRY_DELAY', 1.0)
+                    
+                    profile = None
+                    last_error = None
+                    
+                    for attempt in range(max_retries):
+                        try:
+                            # Fetch character profile
+                            profile = self.api.get_character_profile(realm_slug, character.name)
+                            break  # Success, exit retry loop
+                        except Exception as api_error:
+                            last_error = api_error
+                            error_msg = str(api_error)
+                            
+                            # Check if this is a retryable error
+                            is_retryable = any(code in error_msg for code in ['504', '503', '500', 'timeout', 'connection'])
+                            
+                            if is_retryable and attempt < max_retries - 1:
+                                wait_time = retry_delay * (2 ** attempt)  # Exponential backoff
+                                current_app.logger.warning(f"API error for '{character.name}' (attempt {attempt + 1}/{max_retries}): {error_msg}. Retrying in {wait_time}s...")
+                                import time
+                                time.sleep(wait_time)
+                            else:
+                                # Not retryable or out of retries
+                                raise api_error
+                    
+                    if not profile:
+                        raise last_error or Exception("Failed to fetch profile")
                     
                     # Update character with profile data
                     character.achievement_points = profile.get('achievement_points', 0)
