@@ -299,58 +299,6 @@
                                                 {% if sort_by == 'last_seen' %}
                                                     <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
                                                 {% else %}
-                                        <th>
-                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='race', sort_order='asc' if sort_by == 'race' and sort_order == 'desc' else 'desc') }}" 
-                                               class="text-decoration-none text-dark">
-                                                Race
-                                                {% if sort_by == 'race' %}
-                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
-                                                {% else %}
-                                                    <i class="bi bi-arrow-down-up text-muted"></i>
-                                                {% endif %}
-                                            </a>
-                                        </th>
-                                        <th>
-                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='spec', sort_order='asc' if sort_by == 'spec' and sort_order == 'desc' else 'desc') }}" 
-                                               class="text-decoration-none text-dark">
-                                                Spec
-                                                {% if sort_by == 'spec' %}
-                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
-                                                {% else %}
-                                                    <i class="bi bi-arrow-down-up text-muted"></i>
-                                                {% endif %}
-                                            </a>
-                                        </th>
-                                        <th>
-                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='ilvl', sort_order='asc' if sort_by == 'ilvl' and sort_order == 'desc' else 'desc') }}" 
-                                               class="text-decoration-none text-dark">
-                                                Item Level
-                                                {% if sort_by == 'ilvl' %}
-                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
-                                                {% else %}
-                                                    <i class="bi bi-arrow-down-up text-muted"></i>
-                                                {% endif %}
-                                            </a>
-                                        </th>
-                                        <th>
-                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='rank', sort_order='asc' if sort_by == 'rank' and sort_order == 'desc' else 'desc') }}" 
-                                               class="text-decoration-none text-dark">
-                                                Rank
-
-                                                {% if sort_by == 'rank' %}
-                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
-                                                {% else %}
-                                                    <i class="bi bi-arrow-down-up text-muted"></i>
-                                                {% endif %}
-                                            </a>
-                                        </th>
-                                        <th>
-                                            <a href="{{ url_for('main.guild_detail', guild_id=guild.id, sort_by='last_seen', sort_order='asc' if sort_by == 'last_seen' and sort_order == 'desc' else 'desc') }}" 
-                                               class="text-decoration-none text-dark">
-                                                Last Seen
-                                                {% if sort_by == 'last_seen' %}
-                                                    <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
-                                                {% else %}
                                                     <i class="bi bi-arrow-down-up text-muted"></i>
                                                 {% endif %}
                                             </a>
