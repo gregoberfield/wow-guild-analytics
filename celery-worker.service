@@ -15,11 +15,14 @@ Environment="PYTHONPATH=/var/www/guildmaestro"
 EnvironmentFile=/var/www/guildmaestro/.env
 
 # Celery worker command
+# Note: Increase --concurrency based on your database backend:
+# - SQLite: Use 1-2 (to avoid database locks)
+# - PostgreSQL: Use 4+ (can handle concurrent connections)
 ExecStart=/var/www/guildmaestro/venv/bin/celery -A app.celery_config.celery worker \
     --loglevel=info \
     --logfile=/var/www/guildmaestro/logs/celery-worker.log \
     --pidfile=/var/run/celery/celery-worker.pid \
-    --concurrency=2 \
+    --concurrency=4 \
     --max-tasks-per-child=1000
 
 # Runtime directory for PID file
