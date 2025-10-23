@@ -104,7 +104,8 @@ class GuildService:
                 
                 # Update character data from roster
                 character.bnet_id = char_bnet_id
-                character.realm = character_data.get('realm', {}).get('name', '')
+                # Use realm from character data, fallback to guild's realm
+                character.realm = character_data.get('realm', {}).get('name', '') or guild_data.get('realm', {}).get('name', '')
                 character.level = character_data.get('level', 0)
                 # Note: roster API doesn't include class/race names, only IDs
                 # These will be populated when we fetch the full character profile
@@ -387,8 +388,14 @@ class GuildService:
             skipped = 0
             
             for idx, character in enumerate(characters, 1):
-                # Get realm slug from character
-                realm_slug = character.realm.lower().replace(' ', '-').replace("'", '')
+                # Get realm slug from character, fallback to guild's realm if empty
+                realm_slug = character.realm or guild.realm
+                if realm_slug:
+                    realm_slug = realm_slug.lower().replace(' ', '-').replace("'", '')
+                else:
+                    current_app.logger.error(f"Character '{character.name}' has no realm set, skipping")
+                    skipped += 1
+                    continue
                 
                 if idx % 25 == 0:
                     current_app.logger.info(f"Progress: {idx}/{total_chars} characters processed...")
