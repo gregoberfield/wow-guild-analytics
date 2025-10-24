@@ -11,6 +11,10 @@ These fields are populated from the Battle.net API pvp-summary endpoint.
 
 import sqlite3
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 def migrate_sqlite():
     """Add PvP columns to SQLite database"""
@@ -71,10 +75,10 @@ def migrate_postgresql():
         conn = psycopg2.connect(
             host=os.getenv('POSTGRES_HOST'),
             port=os.getenv('POSTGRES_PORT', 5432),
-            database=os.getenv('POSTGRES_DATABASE'),
+            database=os.getenv('POSTGRES_DB') or os.getenv('POSTGRES_DATABASE'),
             user=os.getenv('POSTGRES_USER'),
             password=os.getenv('POSTGRES_PASSWORD'),
-            sslmode='require'
+            sslmode=os.getenv('POSTGRES_SSL_MODE', 'require')
         )
         cursor = conn.cursor()
         
