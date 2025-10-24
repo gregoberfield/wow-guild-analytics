@@ -88,6 +88,7 @@ def sync_guild_roster(self, realm_slug, guild_name_slug, task_id=None):
             success_msg = f'Successfully synced {member_count} members from {guild.name}'
             if removed_count > 0:
                 success_msg += f' ({removed_count} member{"s" if removed_count != 1 else ""} removed)'
+            success_msg += '. Character detail sync scheduled.'
             
             # Mark as complete
             task_record.status = 'SUCCESS'
@@ -98,6 +99,11 @@ def sync_guild_roster(self, realm_slug, guild_name_slug, task_id=None):
             db.session.commit()
             
             logger.info(f"Guild sync completed: {success_msg}")
+            
+            # Automatically schedule character detail sync after successful guild sync
+            logger.info(f"Scheduling character detail sync for guild {guild.id}...")
+            sync_character_details.delay(guild.id)
+            logger.info(f"Character detail sync task queued for guild {guild.id}")
             
             return {
                 'status': 'success',
