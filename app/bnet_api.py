@@ -124,6 +124,13 @@ class BattleNetAPI:
         params = {'namespace': self.namespace}
         return self._make_request(endpoint, params)
     
+    def get_character_pvp_summary(self, realm_slug, character_name_slug):
+        """Get character PvP summary (honorable kills, pvp rank)"""
+        normalized_name = self._normalize_character_name(character_name_slug)
+        endpoint = f"/profile/wow/character/{realm_slug}/{normalized_name}/pvp-summary"
+        params = {'namespace': self.namespace}
+        return self._make_request(endpoint, params)
+    
     def get_primary_spec_from_talents(self, spec_data):
 
         """
