@@ -48,8 +48,6 @@ class GuildService:
             current_app.logger.info(f"✅ Roster retrieved: {len(members)} members found")
             
             # Track statistics
-            successful_profiles = 0
-            failed_profiles = 0
             added_count = 0
             
             # Track current member IDs to identify members who left
@@ -108,44 +106,10 @@ class GuildService:
                 character.realm = character_data.get('realm', {}).get('name', '') or guild_data.get('realm', {}).get('name', '')
                 character.level = character_data.get('level', 0)
                 # Note: roster API doesn't include class/race names, only IDs
-                # These will be populated when we fetch the full character profile
+                # These will be populated when we run the separate character detail sync task
                 character.rank = member.get('rank', 0)
                 character.guild_id = guild.id
                 character.last_updated = datetime.utcnow()
-                
-                # Try to get additional character details (this may fail for some characters)
-                try:
-                    profile = self.api.get_character_profile(char_realm, char_name)
-                    character.achievement_points = profile.get('achievement_points', 0)
-                    character.average_item_level = profile.get('average_item_level', 0)
-                    character.equipped_item_level = profile.get('equipped_item_level', 0)
-                    character.gender = profile.get('gender', {}).get('name', '')
-                    character.faction = profile.get('faction', {}).get('name', '')
-                    character.character_class = profile.get('character_class', {}).get('name', '')
-                    character.race = profile.get('race', {}).get('name', '')
-                    character.last_login_timestamp = profile.get('last_login_timestamp')  # Unix timestamp in milliseconds
-                    successful_profiles += 1
-                    
-                    # Get active spec (Classic uses talent trees, not rigid specs)
-                    try:
-                        specs = self.api.get_character_specializations(char_realm, char_name)
-                        # Extract primary spec from talent tree distribution
-                        primary_spec = self.api.get_primary_spec_from_talents(specs)
-                        if primary_spec:
-                            character.spec_name = primary_spec
-                        else:
-                            character.spec_name = ''
-                    except Exception as spec_error:
-                        character.spec_name = ''
-                        current_app.logger.warning(f"Could not fetch specialization for {char_name}: {str(spec_error)}")
-                        
-                except Exception as e:
-                    failed_profiles += 1
-                    error_msg = str(e)
-                    if "404" in error_msg:
-                        current_app.logger.debug(f"Character profile not found for '{char_name}' (may be private or not indexed)")
-                    else:
-                        current_app.logger.warning(f"Could not fetch details for '{char_name}': {error_msg}")
                 
                 db.session.add(character)
                 
@@ -252,13 +216,12 @@ class GuildService:
             current_app.logger.info(f"✅ Guild sync completed successfully!")
             current_app.logger.info(f"   - Sync type: {'INITIAL' if is_initial_sync else 'UPDATE'}")
             current_app.logger.info(f"   - Total members: {len(members)}")
-            current_app.logger.info(f"   - Profiles retrieved: {successful_profiles}")
-            current_app.logger.info(f"   - Profiles unavailable: {failed_profiles}")
             if not is_initial_sync:
                 current_app.logger.info(f"   - Members added: {added_count}")
                 current_app.logger.info(f"   - Members removed: {removed_count}")
             else:
                 current_app.logger.info(f"   - History tracking: Skipped (initial sync)")
+            current_app.logger.info(f"   - Note: Run character detail sync task to update profiles")
             
             return guild, len(members), removed_count
             
