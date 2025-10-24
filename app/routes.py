@@ -64,12 +64,14 @@ def guild_detail(guild_id):
     if sort_by in valid_sort_columns:
         sort_column = valid_sort_columns[sort_by]
         if sort_order == 'asc':
-            characters_query = characters_query.order_by(sort_column.asc())
+            # Ascending: nulls at the end (nullslast)
+            characters_query = characters_query.order_by(sort_column.asc().nullslast())
         else:
-            characters_query = characters_query.order_by(sort_column.desc())
+            # Descending: nulls at the end (nullslast)
+            characters_query = characters_query.order_by(sort_column.desc().nullslast())
     else:
         # Default sorting
-        characters_query = characters_query.order_by(Character.level.desc())
+        characters_query = characters_query.order_by(Character.level.desc().nullslast())
     
     # Get total count before pagination
     total_characters = characters_query.count()
