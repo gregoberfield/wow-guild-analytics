@@ -105,11 +105,42 @@ class GuildService:
                 # Use realm from character data, fallback to guild's realm
                 character.realm = character_data.get('realm', {}).get('name', '') or guild_data.get('realm', {}).get('name', '')
                 character.level = character_data.get('level', 0)
-                # Note: roster API doesn't include class/race names, only IDs
-                # These will be populated when we run the separate character detail sync task
                 character.rank = member.get('rank', 0)
                 character.guild_id = guild.id
                 character.last_updated = datetime.utcnow()
+                
+                # For new members (not during initial sync), fetch their details immediately
+                # so we can populate the guild history table with accurate class info
+                if is_new_character and not is_initial_sync:
+                    try:
+                        current_app.logger.info(f"Fetching details for new member '{char_name}'...")
+                        profile = self.api.get_character_profile(char_realm, char_name)
+                        character.achievement_points = profile.get('achievement_points', 0)
+                        character.average_item_level = profile.get('average_item_level', 0)
+                        character.equipped_item_level = profile.get('equipped_item_level', 0)
+                        character.gender = profile.get('gender', {}).get('name', '')
+                        character.faction = profile.get('faction', {}).get('name', '')
+                        character.character_class = profile.get('character_class', {}).get('name', '')
+                        character.race = profile.get('race', {}).get('name', '')
+                        character.last_login_timestamp = profile.get('last_login_timestamp')
+                        
+                        # Try to get avatar
+                        try:
+                            media = self.api.get_character_media(char_realm, char_name)
+                            for asset in media.get('assets', []):
+                                if asset.get('key') == 'avatar':
+                                    character.avatar_url = asset.get('value')
+                                    break
+                        except Exception:
+                            pass  # Avatar is optional
+                        
+                        current_app.logger.info(f"✅ Details fetched for new member '{char_name}' ({character.character_class})")
+                    except Exception as e:
+                        error_msg = str(e)
+                        if "404" in error_msg:
+                            current_app.logger.debug(f"Profile not found for new member '{char_name}' (not indexed yet)")
+                        else:
+                            current_app.logger.warning(f"Could not fetch details for new member '{char_name}': {error_msg}")
                 
                 db.session.add(character)
                 
