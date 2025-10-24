@@ -350,6 +350,13 @@ class GuildService:
         chars_with_profiles = sum(1 for char in characters if char.average_item_level or char.gender)
         data_completeness = round((chars_with_profiles / len(characters) * 100), 1) if characters else 0
         
+        # Top PvP killers (level 60 only)
+        top_pvp_60 = sorted(
+            [char for char in level_60_chars if char.honorable_kills and char.honorable_kills > 0],
+            key=lambda x: x.honorable_kills,
+            reverse=True
+        )[:5]  # Top 5
+        
         return {
             'guild': guild,
             'total_members': len(characters),
@@ -363,6 +370,7 @@ class GuildService:
             'level_60_percentages': level_60_percentages,
             'level_60_class_spec': level_60_class_spec,
             'average_item_level': round(avg_ilvl, 2),
+            'top_pvp_60': top_pvp_60,
             'spec_distribution': spec_distribution,
             'characters': characters,
             'data_completeness': data_completeness,

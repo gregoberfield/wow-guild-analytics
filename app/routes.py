@@ -394,3 +394,74 @@ def task_list():
     )
     
     return render_template('task_list.html', pagination=pagination)
+
+@main_bp.route('/guild/<int:guild_id>/pvp')
+def pvp_leaderboard(guild_id):
+    """PvP leaderboard page showing top killers by level bracket"""
+    guild = Guild.query.get_or_404(guild_id)
+    
+    # Get bracket filter from query string (default to level 60)
+    bracket = request.args.get('bracket', '60', type=str)
+    
+    # Define level brackets
+    brackets = {
+        '10-19': (10, 19),
+        '20-29': (20, 29),
+        '30-39': (30, 39),
+        '40-49': (40, 49),
+        '50-59': (50, 59),
+        '60': (60, 60)
+    }
+    
+    # Validate bracket
+    if bracket not in brackets:
+        bracket = '60'
+    
+    min_level, max_level = brackets[bracket]
+    
+    # Get top 10 players by honorable kills in this bracket
+    top_players = Character.query.filter_by(guild_id=guild_id)\
+        .filter(Character.level >= min_level)\
+        .filter(Character.level <= max_level)\
+        .filter(Character.honorable_kills.isnot(None))\
+        .filter(Character.honorable_kills > 0)\
+        .order_by(Character.honorable_kills.desc().nullslast())\
+        .limit(10)\
+        .all()
+    
+    # Get top players by class (top 1 from each class)
+    class_leaders = {}
+    character_classes = db.session.query(Character.character_class)\
+        .filter_by(guild_id=guild_id)\
+        .filter(Character.level >= min_level)\
+        .filter(Character.level <= max_level)\
+        .filter(Character.honorable_kills.isnot(None))\
+        .filter(Character.honorable_kills > 0)\
+        .filter(Character.character_class.isnot(None))\
+        .distinct()\
+        .all()
+    
+    for (class_name,) in character_classes:
+        if class_name:
+            top_in_class = Character.query.filter_by(guild_id=guild_id, character_class=class_name)\
+                .filter(Character.level >= min_level)\
+                .filter(Character.level <= max_level)\
+                .filter(Character.honorable_kills.isnot(None))\
+                .filter(Character.honorable_kills > 0)\
+                .order_by(Character.honorable_kills.desc().nullslast())\
+                .first()
+            
+            if top_in_class:
+                class_leaders[class_name] = top_in_class
+    
+    # Sort class leaders by honorable kills (descending)
+    class_leaders = dict(sorted(class_leaders.items(), 
+                                key=lambda x: x[1].honorable_kills or 0, 
+                                reverse=True))
+    
+    return render_template('pvp_leaderboard.html',
+                          guild=guild,
+                          bracket=bracket,
+                          brackets=list(brackets.keys()),
+                          top_players=top_players,
+                          class_leaders=class_leaders)

@@ -71,6 +71,16 @@ def create_app(config_class=Config):
             years = int(seconds / 31536000)
             return f'{years} year{"s" if years != 1 else ""} ago'
     
+    @app.template_filter('number_format')
+    def number_format_filter(value):
+        """Format numbers with thousands separators (e.g., 1000 -> 1,000)"""
+        if value is None:
+            return '0'
+        try:
+            return f'{int(value):,}'
+        except (ValueError, TypeError):
+            return str(value)
+    
     # Configure logging
     if not app.debug and not app.testing:
         # Create logs directory if it doesn't exist

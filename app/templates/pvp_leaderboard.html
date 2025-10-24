@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}PvP Leaderboard - {{ guild.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>⚔️ PvP Leaderboard</h2>
+            <p class="text-muted">{{ guild.name }} - {{ guild.realm }}</p>
+        </div>
+        <a href="{{ url_for('main.guild_detail', guild_id=guild.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Guild
+        </a>
+    </div>
+
+    <!-- Bracket Selector -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Level Bracket</h5>
+            <div class="btn-group" role="group" aria-label="Level brackets">
+                {% for b in brackets %}
+                <a href="{{ url_for('main.pvp_leaderboard', guild_id=guild.id, bracket=b) }}" 
+                   class="btn btn-{{ 'primary' if bracket == b else 'outline-primary' }}">
+                    {{ b }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Top 10 Overall -->
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-trophy-fill"></i> Top 10 - Level {{ bracket }}
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if top_players %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">Rank</th>
+                            <th style="width: 60px;"></th>
+                            <th>Name</th>
+                            <th>Class</th>
+                            <th>Level</th>
+                            <th>Honorable Kills</th>
+                            <th>PvP Rank</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_players %}
+                        <tr>
+                            <td>
+                                <strong class="fs-5">
+                                    {% if loop.index == 1 %}
+                                    <span class="text-warning">🥇</span>
+                                    {% elif loop.index == 2 %}
+                                    <span class="text-secondary">🥈</span>
+                                    {% elif loop.index == 3 %}
+                                    <span style="color: #CD7F32;">🥉</span>
+                                    {% else %}
+                                    {{ loop.index }}
+                                    {% endif %}
+                                </strong>
+                            </td>
+                            <td>
+                                {% if player.avatar_url %}
+                                <img src="{{ player.avatar_url }}" alt="{{ player.name }}" 
+                                     class="rounded-circle" style="width: 40px; height: 40px;">
+                                {% else %}
+                                <div class="rounded-circle bg-secondary d-inline-block" 
+                                     style="width: 40px; height: 40px;"></div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ player.name }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ player.character_class or 'Unknown' }}</span>
+                            </td>
+                            <td>{{ player.level or '?' }}</td>
+                            <td>
+                                <strong class="text-danger">{{ player.honorable_kills | default(0) | number_format }}</strong>
+                            </td>
+                            <td>
+                                {% if player.pvp_rank and player.pvp_rank > 0 %}
+                                <span class="badge bg-warning text-dark">Rank {{ player.pvp_rank }}</span>
+                                {% else %}
+                                <span class="text-muted">No rank</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No PvP data available for this bracket yet.
+                Sync character details to populate PvP statistics.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Top by Class -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-shield-fill"></i> Top Killer by Class - Level {{ bracket }}
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if class_leaders %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;"></th>
+                            <th>Name</th>
+                            <th>Class</th>
+                            <th>Level</th>
+                            <th>Honorable Kills</th>
+                            <th>PvP Rank</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for class_name, player in class_leaders.items() %}
+                        <tr>
+                            <td>
+                                {% if player.avatar_url %}
+                                <img src="{{ player.avatar_url }}" alt="{{ player.name }}" 
+                                     class="rounded-circle" style="width: 40px; height: 40px;">
+                                {% else %}
+                                <div class="rounded-circle bg-secondary d-inline-block" 
+                                     style="width: 40px; height: 40px;"></div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ player.name }}</strong>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ class_name }}</span>
+                            </td>
+                            <td>{{ player.level or '?' }}</td>
+                            <td>
+                                <strong class="text-danger">{{ player.honorable_kills | default(0) | number_format }}</strong>
+                            </td>
+                            <td>
+                                {% if player.pvp_rank and player.pvp_rank > 0 %}
+                                <span class="badge bg-warning text-dark">Rank {{ player.pvp_rank }}</span>
+                                {% else %}
+                                <span class="text-muted">No rank</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No PvP data available for this bracket yet.
+                Sync character details to populate PvP statistics.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Info Footer -->
+    <div class="alert alert-secondary mt-4">
+        <h6><i class="bi bi-info-circle"></i> About PvP Rankings</h6>
+        <p class="mb-0">
+            <strong>Honorable Kills:</strong> Total kills earned in PvP combat.<br>
+            <strong>PvP Rank:</strong> Classic WoW honor system rank (0-14). 
+            Ranks 12-14 grant access to epic PvP gear rewards.
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add number formatting filter for Jinja2
+document.addEventListener('DOMContentLoaded', function() {
+    // Numbers are already formatted server-side via number_format filter
+});
+</script>
+{% endblock %}
