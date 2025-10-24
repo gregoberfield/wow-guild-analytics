@@ -134,6 +134,14 @@ class GuildService:
                         except Exception:
                             pass  # Avatar is optional
                         
+                        # Try to get PvP stats
+                        try:
+                            pvp_data = self.api.get_character_pvp_summary(char_realm, char_name)
+                            character.honorable_kills = pvp_data.get('honorable_kills', 0)
+                            character.pvp_rank = pvp_data.get('pvp_rank', 0)
+                        except Exception:
+                            pass  # PvP stats are optional
+                        
                         current_app.logger.info(f"✅ Details fetched for new member '{char_name}' ({character.character_class})")
                     except Exception as e:
                         error_msg = str(e)
@@ -471,6 +479,16 @@ class GuildService:
                     except Exception as media_error:
                         # Avatar is optional, don't fail if not available
                         current_app.logger.debug(f"Could not fetch media for {character.name}: {str(media_error)}")
+                    
+                    # Fetch PvP statistics
+                    try:
+                        pvp_data = self.api.get_character_pvp_summary(realm_slug, character.name)
+                        character.honorable_kills = pvp_data.get('honorable_kills', 0)
+                        character.pvp_rank = pvp_data.get('pvp_rank', 0)
+                        current_app.logger.debug(f"✅ {character.name}: PvP stats updated (HKs: {character.honorable_kills}, Rank: {character.pvp_rank})")
+                    except Exception as pvp_error:
+                        # PvP stats are optional, don't fail if not available
+                        current_app.logger.debug(f"Could not fetch PvP stats for {character.name}: {str(pvp_error)}")
                     
                     character.last_updated = datetime.utcnow()
                     successful += 1

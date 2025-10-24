@@ -114,6 +114,8 @@ class Character(db.Model):
     rank = db.Column(db.Integer)
     last_login_timestamp = db.Column(db.BigInteger)  # Unix timestamp in milliseconds from Blizzard API
     avatar_url = db.Column(db.String(500))  # Character avatar image URL from Battle.net media endpoint
+    honorable_kills = db.Column(db.Integer)  # Total honorable kills from PvP combat
+    pvp_rank = db.Column(db.Integer)  # Classic WoW honor rank (0-14)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
     guild_id = db.Column(db.Integer, db.ForeignKey('guild.id'), nullable=True)
     progression_history = db.relationship('CharacterProgressionHistory', backref='character', lazy=True, order_by='CharacterProgressionHistory.timestamp.desc()', cascade='all, delete-orphan')
@@ -135,6 +137,8 @@ class Character(db.Model):
             'rank': self.rank,
             'last_login_timestamp': self.last_login_timestamp,
             'avatar_url': self.avatar_url,
+            'honorable_kills': self.honorable_kills,
+            'pvp_rank': self.pvp_rank,
             'last_updated': self.last_updated.isoformat() if self.last_updated else None
         }
 
