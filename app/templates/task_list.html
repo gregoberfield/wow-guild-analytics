@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}All Tasks{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="bi bi-list-task me-2"></i>
+                        All Tasks
+                    </h4>
+                    <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-house me-2"></i>Home
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if pagination.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                    <th>Created</th>
+                                    <th>Completed</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for task in pagination.items %}
+                                <tr>
+                                    <td><code>{{ task.id }}</code></td>
+                                    <td>
+                                        <i class="bi {% if task.task_type == 'guild_sync' %}bi-people{% elif task.task_type == 'character_sync' %}bi-person{% else %}bi-gear{% endif %} me-1"></i>
+                                        {% if task.task_type == 'guild_sync' %}
+                                            Guild Sync
+                                        {% elif task.task_type == 'character_sync' %}
+                                            Character Sync
+                                        {% else %}
+                                            {{ task.task_type }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if task.status == 'SUCCESS' %}bg-success{% elif task.status == 'FAILURE' %}bg-danger{% elif task.status == 'STARTED' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                            {{ task.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="width: 100px; height: 20px;">
+                                            <div class="progress-bar {% if task.status == 'STARTED' %}progress-bar-striped progress-bar-animated{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ task.progress }}%;"
+                                                 aria-valuenow="{{ task.progress }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ task.progress }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small>{{ task.created_at.strftime('%Y-%m-%d %H:%M:%S') if task.created_at else '-' }}</small>
+                                    </td>
+                                    <td>
+                                        <small>{{ task.completed_at.strftime('%Y-%m-%d %H:%M:%S') if task.completed_at else '-' }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('main.task_status', task_id=task.id) }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                            {% if task.guild_id %}
+                                            <a href="{{ url_for('main.guild_detail', guild_id=task.guild_id) }}" class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-arrow-right"></i> Guild
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    <nav aria-label="Task list pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <!-- First Page -->
+                            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('main.task_list', page=1, per_page=request.args.get('per_page', 20)) }}">
+                                    <i class="bi bi-chevron-double-left"></i>
+                                </a>
+                            </li>
+                            
+                            <!-- Previous Page -->
+                            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('main.task_list', page=pagination.prev_num, per_page=request.args.get('per_page', 20)) if pagination.has_prev else '#' }}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                            
+                            <!-- Page Numbers -->
+                            {% set start_page = [1, pagination.page - 2]|max %}
+                            {% set end_page = [pagination.pages, pagination.page + 2]|min %}
+                            
+                            {% for p in range(start_page, end_page + 1) %}
+                                <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('main.task_list', page=p, per_page=request.args.get('per_page', 20)) }}">
+                                        {{ p }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                            
+                            <!-- Next Page -->
+                            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('main.task_list', page=pagination.next_num, per_page=request.args.get('per_page', 20)) if pagination.has_next else '#' }}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            
+                            <!-- Last Page -->
+                            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('main.task_list', page=pagination.pages, per_page=request.args.get('per_page', 20)) }}">
+                                    <i class="bi bi-chevron-double-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                        
+                        <!-- Page Info -->
+                        <p class="text-center text-muted">
+                            Showing {{ pagination.items|length }} of {{ pagination.total }} tasks
+                            (Page {{ pagination.page }} of {{ pagination.pages }})
+                        </p>
+                        
+                        <!-- Per Page Selector -->
+                        <div class="text-center">
+                            <label class="me-2">Tasks per page:</label>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('main.task_list', page=1, per_page=20) }}" 
+                                   class="btn btn-sm {% if request.args.get('per_page', '20') == '20' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    20
+                                </a>
+                                <a href="{{ url_for('main.task_list', page=1, per_page=50) }}" 
+                                   class="btn btn-sm {% if request.args.get('per_page') == '50' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    50
+                                </a>
+                                <a href="{{ url_for('main.task_list', page=1, per_page=100) }}" 
+                                   class="btn btn-sm {% if request.args.get('per_page') == '100' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    100
+                                </a>
+                            </div>
+                        </div>
+                    </nav>
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox display-1 text-muted"></i>
+                        <p class="lead text-muted mt-3">No tasks found</p>
+                        <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                            <i class="bi bi-house me-2"></i>Go to Home
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh if there are any running tasks
+const hasRunningTasks = {{ 'true' if pagination.items and pagination.items|selectattr('status', 'in', ['PENDING', 'STARTED'])|list|length > 0 else 'false' }};
+
+if (hasRunningTasks) {
+    setTimeout(() => {
+        location.reload();
+    }, 5000);  // Refresh every 5 seconds if there are running tasks
+}
+</script>
+{% endblock %}
